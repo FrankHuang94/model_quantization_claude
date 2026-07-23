@@ -535,7 +535,13 @@ and the vendor/partner-reported throughput figures, which await independent veri
 mixed confidence profile is typical of the vendor sections: the production-relevant capabilities
 are solid, while the frontier formats and the headline performance numbers carry the flags that
 the database's methodology (Section 17) prescribes for vendor claims not yet independently
-corroborated.
+corroborated. In MediaTek's specific case, the LiteRT integration provides an unusually strong
+basis for the on-device-LLM claims — because the performance figures come from a Google-MediaTek
+collaboration running named open models through a public runtime, they are more verifiable than a
+typical vendor benchmark, even if still not fully independent. This is a reminder that ecosystem
+integration improves not just deployment convenience but the verifiability of capability claims,
+since a capability exercised through a public, standard stack on named models is easier for third
+parties to reproduce than one demonstrated only through a proprietary SDK on unnamed workloads.
 
 ---
 
