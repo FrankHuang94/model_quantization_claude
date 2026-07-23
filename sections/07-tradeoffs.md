@@ -493,6 +493,27 @@ quantization that improves the average while worsening the tail can be a net neg
 experience. This distributional view is part of measuring the tradeoff credibly, and it is why
 serving systems track latency percentiles rather than means.
 
+## The trajectory of the tradeoff
+
+The quantization tradeoff is not static — it has improved steadily and will keep improving,
+which matters for planning. Over the past decade, the accuracy cost of a given bit-width has
+fallen as methods matured: 4-bit that was lossy in 2021 is near-lossless (for LLM weights)
+in 2026, because per-group granularity, better calibration, outlier handling, and rotation
+methods each shaved the accuracy cost. The resource win of a given scheme has grown as
+hardware added native low-precision support, turning memory-only savings into memory-and-
+compute savings. And the engineering cost has fallen as tooling matured — what once required
+bespoke QAT pipelines is now a library call. The direction is that each bit-width becomes
+*safer and cheaper to exploit* over time, so a scheme that is "research-frontier" today
+(2-bit, W4A4, FP4) is likely to be "production-viable" in a few years, following the same
+research-to-production diffusion that INT8 and 4-bit already completed. For planning, this
+means two things: first, the conservative choice today (4-bit weight-only) will remain safe
+and only get better; second, the aggressive frontier is a moving target worth tracking but
+not betting production on prematurely. Section 14 develops where the frontier is heading; the
+tradeoff point here is that the curve is shifting favorably, so the cost-benefit calculus of
+a given scheme improves with time, and revisiting a "too risky" quantization decision after a
+year or two is often worthwhile because the methods and hardware that make it safe may have
+arrived.
+
 ## The honest bottom line
 
 Quantization's tradeoff is, for the common cases, extraordinarily favorable — INT8 and
