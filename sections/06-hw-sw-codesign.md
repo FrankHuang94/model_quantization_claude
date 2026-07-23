@@ -657,6 +657,22 @@ decision is never purely a software decision: it is a negotiation with the silic
 compiler, and the next four sections' vendor roadmaps (08–11) are, in effect, detailed
 maps of what each vendor's side of that negotiation offers.
 
+For the practitioner, this section reduces to a short discipline that complements Section
+05's algorithmic checklist. First, check the target's *native* precision support (not just
+its spec-sheet format list) and choose a quantization scheme the matrix engine executes
+natively, at a granularity/block size the hardware likes. Second, reason with the roofline:
+identify whether the workload is memory- or compute-bound at the intended batch size, and
+pick weight-only or weight+activation quantization accordingly. Third, verify the whole
+stack — quantization tool, exchange format, compiler, runtime — supports the scheme end to
+end, with no layer forcing a fallback. Fourth, profile on the actual device and validate
+the *compiled* model's accuracy, because simulated accuracy and native-precision claims are
+both necessary-but-not-sufficient. Follow that discipline and quantization delivers its
+promised speed and energy wins; skip it and a theoretically-excellent quantized model can
+run slower than the float baseline it was meant to replace. Co-design is not an advanced
+topic to consider after the algorithm is chosen — it is a constraint that should shape the
+algorithm choice from the start, which is the sense in which the whole field has become a
+co-design discipline rather than a software one.
+
 ---
 
 *Next: [07 — Pros, Cons, and Deployment Tradeoffs](./07-tradeoffs.md).*
