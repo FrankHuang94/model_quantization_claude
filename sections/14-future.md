@@ -507,12 +507,14 @@ next production additions; should track quantization-native training and in-memo
 high-uncertainty wildcards that could reshape the field if they break through; and should expect the
 tooling to consolidate and automate, easing the fragmentation tax over time. The convergence of the
 energy driver, the agentic-AI driver, the on-device-personalization trend, the democratization
-trajectory, and the co-design intensification all point the same way — toward quantization becoming more
+trajectory, the regulatory and sustainability pressures, and the co-design intensification all point the
+same way — toward quantization becoming more
 central, more integrated, more automated, and more capable — and while the specific milestones are
 uncertain, that overall direction is as well-supported as any forecast in a fast-moving field can be.
 The future of edge AI is, to a first approximation, the future of quantization, because quantization is
 what makes capable AI fit the devices and budgets it must run on, and nothing on the horizon changes
-that fundamental role — only its depth, breadth, and degree of integration will grow.
+that fundamental role — only its depth, breadth, and degree of integration will grow. That is the single most durable conclusion
+this forward-looking section can offer, and it is the note on which the roadmap rests.
 
 ## Master database contributions
 
