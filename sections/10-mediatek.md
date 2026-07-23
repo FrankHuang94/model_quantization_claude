@@ -461,6 +461,46 @@ the world's smartphones, MediaTek's APU and its quantization stack are the on-de
 substrate, making MediaTek a consequential player in the practical quantization landscape even
 where it trails on the research and disclosed-format frontiers.
 
+## Forward outlook and the format frontier
+
+Looking ahead, MediaTek's quantization trajectory will likely be shaped by several forces. The
+FP8 support entering the Dimensity 9500 generation will need software maturation to deliver
+production value — the familiar silicon-ahead-of-software gap — and MediaTek will likely follow
+the industry toward the microscaling (MX) formats (MXFP4/MXFP8) as they standardize, and
+possibly toward sub-4-bit (INT2 or codebook) support to match Qualcomm's disclosed frontier. The
+LiteRT integration is MediaTek's most promising differentiator and will likely deepen as Google's
+on-device-AI stack (Gemma models, LiteRT-LM, the Android AI ecosystem) grows — a bet on Google's
+platform gravity that positions MediaTek well if Google's on-device-AI ambitions succeed. The
+NVIDIA partnership could uplift MediaTek's software and quantization tooling, addressing its
+historical relative weakness. And MediaTek's volume advantage means whatever schemes it supports
+reach an enormous, price-diverse installed base, keeping its precision choices industry-relevant.
+The most likely trajectory is continued fast-following on the format frontier (FP8 maturation, MX
+formats, eventual sub-4-bit), deepening ecosystem integration as the primary differentiator, and
+selective premium/automotive expansion via partnerships — all anchored by the volume and
+cost-competitiveness that are MediaTek's structural strengths. MediaTek is unlikely to overtake
+Qualcomm on the research-and-disclosed-format frontier, but it does not need to: for the mass
+market's on-device-AI needs, which INT4 weight-only quantization serves well, MediaTek's stack is
+competitive, well-integrated, and broadly deployed, which is what matters for real-world impact.
+
+## What MediaTek's rise means for the quantization landscape
+
+Stepping back, MediaTek's ascent to AI parity with Qualcomm has a broader significance for the
+quantization landscape worth articulating. It confirms that the standard on-device quantization
+schemes (INT4 weight-only, INT8 vision, quantized KV cache) are now table stakes across the
+Android SoC market, supported by both dominant vendors — which stabilizes them as the industry
+defaults and gives model authors confidence that targeting these schemes reaches essentially the
+whole Android market. It demonstrates that ecosystem integration (the LiteRT strategy) can be as
+effective a competitive lever as proprietary tooling depth, which may influence how other vendors
+approach their quantization stacks. And it reinforces that the on-device-AI competition is now
+about the *whole stack* — silicon, tooling, ecosystem integration, and systems-level generation
+optimization — not just NPU specs, echoing the co-design thesis of Section 06. For anyone building
+on-device AI for Android, the practical takeaway is that both Qualcomm and MediaTek are strong,
+well-tooled targets for quantized inference, that INT4 weight-only is the safe cross-vendor
+standard, and that the Google/LiteRT path (well-supported on both, and especially deeply
+integrated on MediaTek) is an increasingly attractive route to quantized on-device LLMs. MediaTek's
+rise has made the Android on-device-AI landscape a genuine two-horse race, to the ecosystem's
+benefit.
+
 ## Note on table completeness
 
 MediaTek discloses less generation-by-generation precision detail than Qualcomm, so the APU
