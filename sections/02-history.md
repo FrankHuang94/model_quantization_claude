@@ -469,6 +469,144 @@ taxonomy. "Adoption" here means production reality, not citation count.
 | 2024 | MXFP microscaling | Block FP formats (FP8/6/4) as HW numerics | 🟡→🟢 hardware arriving |
 | 2025 | FP4 training (Blackwell) | Native FP4 tensor cores + FP4 training | 🟡 data center; edge emerging |
 
+## The parallel hardware timeline
+
+Quantization algorithms did not develop in a vacuum; they co-evolved with the
+silicon that could execute them, and often the availability of a hardware
+instruction preceded and *pulled* the software. Reading the algorithm history
+against the hardware history explains much of the adoption lag.
+
+The earliest relevant hardware primitive was NVIDIA's **DP4A** instruction
+(introduced with the Pascal architecture, 2016), a 4-way INT8 dot-product-accumulate
+that made INT8 GPU inference worthwhile and gave TensorRT's INT8 path something to
+target. Google's first **Tensor Processing Unit** (deployed internally from 2015,
+publicly detailed in 2017) was an INT8 systolic-array matrix multiplier — a
+statement that INT8 was the right inference numeric at data-center scale. On the
+mobile side, dedicated neural accelerators arrived in 2017–2018: Apple's first
+**Neural Engine** (A11 Bionic, 2017), Huawei's **NPU** (Kirin 970, 2017),
+Qualcomm's Hexagon gaining a dedicated tensor accelerator, and Google's **Edge TPU**
+(2018). All were built around INT8 as the primary numeric — which is *why* INT8
+PTQ tooling had an audience ready to consume it.
+
+The next hardware inflection was **INT4** in the tensor units. NVIDIA's Turing
+(2018) added INT4 tensor-core support; Qualcomm's Hexagon introduced INT4 with the
+Snapdragon 8 Gen 2 generation (2022–2023). The data-center **FP8** wave arrived
+with NVIDIA Hopper (H100, 2022) and was matched by the OCP FP8 standard (2023).
+Most recently, NVIDIA Blackwell (2024–2025) brought **FP4** tensor cores and
+microscaling support, and flagship mobile NPUs (Snapdragon 8 Elite Gen 5, 2025)
+brought INT2 and FP8 to phones. The consistent pattern: a numeric format appears in
+silicon roughly one to three years before software fully exploits it, and the
+vendors provision hardware ahead of demonstrated demand because silicon design
+cycles are long and being late is costlier than being early.
+
+| Year | Hardware milestone | Numeric introduced | Significance |
+|---|---|---|---|
+| 2016 | NVIDIA Pascal (DP4A) | INT8 dot-product | Made GPU INT8 inference practical |
+| 2015–17 | Google TPU v1 | INT8 systolic array | INT8 as data-center inference numeric |
+| 2017 | Apple A11 Neural Engine; Kirin 970 NPU | INT8 | Dedicated mobile NPUs, INT8-first |
+| 2018 | NVIDIA Turing tensor cores; Edge TPU | INT8/INT4 | INT4 arrives in tensor units |
+| 2020 | NVIDIA Ampere | INT8/INT4 + sparsity | 2:4 structured sparsity + quant |
+| 2022 | NVIDIA Hopper (H100) | FP8 (E4M3/E5M2) | Data-center FP8 |
+| 2022–23 | Snapdragon 8 Gen 2 Hexagon | INT4 | INT4 in mass-market mobile |
+| 2024–25 | NVIDIA Blackwell | FP4 / MXFP4 | FP4 inference + training |
+| 2025 | Snapdragon 8 Elite Gen 5 | INT2 + FP8 | Sub-4-bit + low-FP on phones |
+
+## The tooling and ecosystem evolution
+
+A technique becomes a default only when it is wrapped in tooling that an ordinary
+engineer can use without reading the paper. The history of quantization *software*
+is therefore as consequential as the history of the algorithms, and it followed a
+recognizable arc from framework-native APIs to a rich third-party ecosystem.
+
+In the INT8 era, quantization lived inside the training frameworks and inference
+engines: **TensorFlow Lite**'s converter (PTQ and QAT), **PyTorch**'s `torch.quantization`
+(later FX-graph and then the `torch.ao` and PyTorch 2 export quantization flows),
+NVIDIA **TensorRT**, Intel **OpenVINO** and the **Neural Network Compression
+Framework (NNCF)**, and vendor SDKs (Qualcomm's SNPE/AIMET, Apple's Core ML Tools).
+The unit of work was a vision model, and the workflow was calibrate-and-compile.
+
+The LLM era spawned a parallel, faster-moving open-source ecosystem centered on
+Hugging Face. **bitsandbytes** (Dettmers) delivered LLM.int8() and later 4-bit
+NF4/FP4 as a near-transparent drop-in for `transformers`. **AutoGPTQ** (and later
+the **GPTQModel** fork) packaged GPTQ; **AutoAWQ** packaged AWQ; Hugging Face
+**Optimum** and later a unified **quantization backend** exposed them behind common
+APIs. On the serving side, **vLLM** and **TensorRT-LLM** added optimized quantized
+kernels (GPTQ, AWQ, FP8, later 4-bit KV cache) for high-throughput inference, and
+**llama.cpp** plus **Ollama** and **LM Studio** made local quantized inference a
+consumer-grade experience. Meta's **ExecuTorch** and Apple's **MLX** extended the
+on-device story. The frontier methods (QuIP#, AQLM, HQQ) shipped as research
+repositories that were then absorbed into the Hugging Face stack.
+
+Two structural observations about this ecosystem matter. First, **the distribution
+format became a battleground**: GGUF (llama.cpp) for local/CPU, safetensors +
+per-method metadata for the GPU/HF world, and ONNX with its evolving quantization
+representation for cross-vendor exchange. A model is now shipped in *many* quantized
+forms simultaneously. Second, **the ecosystem consolidated the reference methods**:
+of the dozens of published LLM-quantization papers, the ones that got clean,
+maintained, well-integrated tooling (GPTQ, AWQ, GGUF k-quants, bitsandbytes NF4)
+became the defaults, largely independent of which paper had the best benchmark
+numbers. Tooling quality, not benchmark leadership, decided adoption — a lesson the
+field keeps re-learning.
+
+| Era | Tooling layer | Representative tools |
+|---|---|---|
+| INT8 (2017–21) | Framework/engine-native | TFLite, PyTorch quant, TensorRT, OpenVINO/NNCF, Core ML Tools, SNPE |
+| LLM (2022–23) | Open-source method libs | bitsandbytes, AutoGPTQ, AutoAWQ, llama.cpp, HF Optimum |
+| LLM serving (2023+) | Optimized runtimes | vLLM, TensorRT-LLM, MLC-LLM, SGLang |
+| On-device (2023+) | Edge runtimes | llama.cpp, Ollama, ExecuTorch, MLX, LiteRT |
+| Sub-4-bit (2024–26) | Research → integration | QuIP#, AQLM, HQQ repos absorbed into HF stack |
+
+## Deep dive: the outlier problem as the field's organizing principle
+
+If one technical thread unifies the LLM and sub-4-bit eras, it is the **activation
+outlier problem**, and it is worth stating precisely because so many methods are
+best understood as responses to it. In large transformers, a small number of
+feature dimensions (channels of the hidden state) develop activation magnitudes
+that are 10–100× larger than the typical dimension. These outliers are not noise —
+they carry information the model depends on — but they wreck naive quantization:
+because integer quantization allocates its levels uniformly across the observed
+range, a few huge values force a coarse scale that crushes the precision available
+to the many normal values.
+
+The history of LLM quantization is essentially a sequence of increasingly elegant
+answers to this one problem:
+
+- **Isolate them in higher precision.** LLM.int8() computes the ~0.1% outlier
+  dimensions in FP16 and the rest in INT8. SpQR isolates outlier *weights* into a
+  sparse FP16 side-channel. Simple and effective, but requires mixed-precision
+  execution paths.
+- **Move them somewhere easier.** SmoothQuant migrates activation outliers into the
+  weights (which are easier to quantize) via a per-channel rescaling that preserves
+  the product. AWQ protects the weights connected to outlier activations by scaling.
+- **Rotate them away.** QuIP/QuaRot/SpinQuant multiply by orthogonal matrices that
+  redistribute the outlier energy across all dimensions, turning a spiky
+  distribution into a smooth Gaussian-like one that quantizes cleanly, with the
+  rotations fused into adjacent layers so they cost nothing at inference.
+- **Avoid creating them at all.** Quantization-native training (BitNet) and
+  architectural changes (e.g., activation-function and attention modifications that
+  suppress outlier formation) attack the root cause during training rather than
+  compensating after the fact.
+
+This progression — isolate → migrate → rotate → prevent — is a good lens for the
+whole field, and it explains why the frontier methods increasingly touch training
+and hardware rather than living purely in post-training software.
+
+## How evaluation evolved
+
+A quieter but important thread is how the field learned to *measure* quantization
+quality. Early vision work reported top-1/top-5 accuracy on ImageNet, a clean
+single number. The LLM era complicated this: perplexity on WikiText/C4 became the
+default proxy, but perplexity is insensitive to exactly the capabilities
+(reasoning, instruction-following, code) that users care about, and a quantized
+model can hold perplexity while degrading on downstream tasks. The community
+gradually moved to task suites (MMLU, GSM8K, HumanEval, and instruction-following
+benchmarks) and, more recently, to explicit tests of the failure modes quantization
+induces — long-context degradation, calibration/overconfidence shifts, and
+task-specific collapse. This maturation matters because a technique's "accuracy
+retention" claim is only as meaningful as the benchmark behind it; Section 15
+treats the benchmark landscape in detail, and Section 07 catalogues the failure
+modes that aggregate metrics hide.
+
 ## Synthesis: what the history teaches
 
 Three durable lessons emerge from a decade of quantization research. First,
