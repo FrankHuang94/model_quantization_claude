@@ -27,6 +27,16 @@ All three depend on quantization: the software companies *do* quantization, and 
 *execute* quantized models (in-memory compute is intrinsically low-precision, and edge accelerators
 are integer-quantization-optimized). This section maps all three.
 
+A note on scope and confidence: the startup landscape moves fast — funding rounds, acquisitions,
+pivots, and shutdowns happen continually — so the figures and statuses here are a snapshot from public
+reporting as of the generation date, flagged accordingly (⚠️), and should be verified against current
+sources for any decision. The selection of 15 companies is representative rather than exhaustive; the
+space includes many more startups (especially in China, less visible in Western reporting, and in the
+long tail of seed-stage compression-tooling companies), but the 15 profiled span the categories and
+funding stages well enough to characterize the landscape's structure. The goal is to map the shape of
+the space — who is building what, funded by whom, betting on which thesis — rather than to catalog every
+participant, and the competitive table and funding analysis that follow are calibrated to that goal.
+
 ![Quantization / compression / edge-inference startups by funding](../assets/charts/13_startup_funding.png)
 
 The funding chart (approximate, public reporting) shows the landscape's shape: the best-funded are
