@@ -385,6 +385,207 @@ supports symmetric per-tensor activations forecloses the per-token dynamic optio
 regardless of what the algorithm prefers. This is why quantization is a co-design
 problem and not a pure-software one, and it is the bridge to Section 06.
 
+## A worked numeric example
+
+Concreteness helps. Suppose a weight vector `w = [-0.62, 0.13, 0.47, -0.05, 0.98,
+-0.31]` is to be quantized to signed INT4 (levels `-8..7`), symmetric per-tensor.
+The absolute maximum is `0.98`, so the scale is `s = 0.98 / 7 ≈ 0.140`. Quantizing
+each value as `round(w/s)` gives integer codes `[-4, 1, 3, 0, 7, -2]`, and
+dequantizing (`s · q`) reconstructs `[-0.560, 0.140, 0.420, 0.000, 0.980, -0.280]`.
+The per-element errors are `[0.060, -0.010, 0.050, -0.050, 0.000, -0.030]` — bounded
+by `s/2 ≈ 0.070`, exactly as theory predicts. Note two things. First, the single
+large value `0.98` set the scale and thereby the resolution for *all* the others;
+had there been an outlier at `4.0`, the scale would have ballooned to `0.571` and the
+small values would have collapsed to near-zero codes — the outlier problem in
+miniature. Second, per-group quantization would split this vector into blocks with
+independent scales, so a block containing only small values would get a fine scale
+and low error. This six-element toy is the entire field in microcosm: scale
+selection, outlier domination, and the granularity remedy.
+
+## The quantization noise model and SQNR in depth
+
+Treating rounding error as additive noise `e` uniformly distributed on `[-s/2, s/2]`
+gives a noise power (variance) of `s²/12`. For a signal with power `σ²` quantized to
+`b` bits over a range that is `k` standard deviations wide, the step size scales as
+`s ∝ σ/2^b`, so the noise power scales as `2^(-2b)`. The signal-to-quantization-noise
+ratio in decibels is therefore approximately `SQNR ≈ 6.02·b + constant`, the origin
+of the "**6 dB per bit**" rule: each additional bit roughly quadruples SQNR (halves
+the RMS error). This linear-in-bits relationship holds only while the quantizer is
+*well-matched* — the range neither clips significant mass nor wastes codes. Outliers
+break it: when a few values force the range far wider than the bulk of the
+distribution, the *effective* number of bits spent on the bulk drops sharply, and
+SQNR falls well below the `6.02·b` line. This is the quantitative reason the accuracy
+cliff below 4 bits is so abrupt for outlier-heavy transformer activations, and why
+outlier handling (which restores a well-matched range) recovers so much: it puts the
+quantizer back on the 6 dB/bit line.
+
+The noise-power view also explains why **error accumulates through depth**. Each
+quantized layer injects noise; in a deep network these perturbations propagate and,
+depending on the layer's gain and the loss curvature, can amplify. Networks with
+residual connections tend to be more robust (the identity path carries the signal
+around noisy transformations), which is part of why transformers quantize as well as
+they do given their size. Sensitivity analysis — perturbing one layer at a time and
+measuring output change, or using the Hessian diagonal — identifies which layers'
+noise the network cannot absorb, guiding mixed-precision allocation.
+
+## Fake quantization and the straight-through estimator in QAT
+
+QAT works by inserting **fake-quantization** operators into the training graph.
+A fake-quant node computes `x_hat = s·(clip(round(x/s)+z, q_min, q_max) - z)` in the
+forward pass — i.e. it actually quantizes and dequantizes, so the network *sees* the
+rounding error during training and adapts to it — but the tensor stays in
+floating-point (hence "fake"; the values are quantized-then-dequantized floats, not
+true integers). The problem is the backward pass: `round()` has zero gradient almost
+everywhere and is undefined at the step boundaries, so naive backpropagation would
+send no gradient through. The **straight-through estimator (STE)** resolves this by
+defining the backward pass of the rounding operation to be the identity (gradient
+passes through unchanged) within the representable range, and zero outside it (where
+the value is clipped, so it genuinely cannot influence the output). Formally,
+`∂x_hat/∂x ≈ 1` for `q_min ≤ x/s ≤ q_max` and `≈ 0` otherwise.
+
+STE is a biased gradient estimator — it ignores the true (zero/undefined) local
+derivative of rounding — but it works remarkably well in practice, and every QAT
+method since BinaryConnect relies on it. Two refinements matter. **Learnable step
+size (LSQ)** makes `s` itself a trained parameter with its own STE-style gradient,
+letting the network optimize the range jointly with the weights, which is important
+at low bit-widths where a hand-set range is suboptimal. **Gradient scaling** for the
+step-size parameter (LSQ's `1/√(N·q_max)` factor) stabilizes training by matching
+the step-size gradient magnitude to the weight gradients. The mental model: QAT is
+ordinary training with a rounding "distortion" in the forward path and a pragmatic
+fiction (STE) that lets gradients flow, so the network learns weights that sit
+comfortably on quantization grid points rather than being violently snapped to them
+after the fact.
+
+## Batch-norm folding, bias correction, and equalization
+
+Several preprocessing steps are so standard that omitting them is a common cause of
+"quantization broke my model" reports.
+
+**Batch-norm folding.** In inference, a convolution or linear layer followed by
+batch normalization can be algebraically merged: the BN scale and shift are folded
+into the preceding layer's weights and bias, producing a single affine layer. This
+must happen *before* quantization, because quantizing the conv and BN separately
+quantizes intermediate values that will not exist at inference, mis-setting ranges.
+QAT frameworks fold BN during training (with care to handle the running-statistics
+vs. batch-statistics discrepancy) so the model is quantized in its deployed form.
+
+**Bias correction.** Quantization introduces a small *systematic* bias in each
+layer's output (the mean of the quantization error is not exactly zero once weights
+are quantized), which compounds through depth. Bias correction estimates this mean
+shift on calibration data and subtracts it (folding a correction into the layer
+bias), recovering accuracy at near-zero cost. It is especially valuable for
+per-tensor and lower-bit weight quantization.
+
+**Cross-layer equalization (CLE).** Because a positive scaling of one layer's output
+channel can be exactly cancelled by inversely scaling the next layer's corresponding
+input channel (for piecewise-linear activations like ReLU), CLE redistributes weight
+magnitudes across consecutive layers to make each channel's range more uniform —
+directly improving per-tensor quantizability without any data. CLE plus bias
+correction is the core of Data-Free Quantization and can bring many CNNs to INT8
+with no calibration set at all. The same "rescale to preserve the product" algebra,
+generalized to activations, is exactly what SmoothQuant does for transformers.
+
+## Rounding schemes beyond nearest
+
+Beyond nearest-rounding and AdaRound's learned rounding, two other schemes appear.
+**Stochastic rounding** rounds `x/s` up or down with probability proportional to
+proximity, so that the *expected* rounded value equals the true value — it is
+unbiased. Stochastic rounding is largely irrelevant for inference (you want
+deterministic outputs) but is important for **low-precision training**, where
+accumulating many small unbiased-rounded updates preserves gradient information that
+deterministic rounding-to-nearest would systematically discard (small updates that
+never reach half a step would always round to zero). This is why FP8/FP4 *training*
+(Section 04, 14) leans on stochastic rounding in the accumulation path. **Dithered**
+and **noise-shaped** rounding borrow further from signal processing but see little
+use in mainstream neural quantization. The practical point: for inference, the
+rounding choice is nearest vs. learned (AdaRound/GPTQ); for training in low
+precision, stochastic rounding is the relevant tool.
+
+## Quantizing the hard operations: softmax, LayerNorm, GELU, attention
+
+Matrix multiplications are the easy part; the *nonlinear* operations between them are
+where integer-only inference gets subtle, and where transformers differ from CNNs.
+
+- **Softmax** involves exponentials and a division, both awkward in integer
+  arithmetic and both dynamic-range-sensitive (the exponentials span many orders of
+  magnitude). Integer-only implementations (I-BERT) use polynomial or lookup-table
+  approximations of `exp` and careful fixed-point normalization. On most edge
+  hardware, softmax is either computed in higher precision (FP16) as a small,
+  cheap island in an otherwise-integer graph, or handled by a dedicated
+  hardware unit. Attention-score quantization is delicate because the scores feed
+  softmax, and errors there distort the attention distribution.
+- **LayerNorm / RMSNorm** compute a mean and variance (a reduction) and divide by a
+  standard deviation, again dynamic-range-sensitive. These are commonly kept in
+  FP16, or implemented with integer approximations of the reciprocal-square-root.
+  Getting normalization wrong shifts every downstream activation's range, so it is a
+  frequent quantization failure point.
+- **GELU / SiLU activations** are smooth nonlinearities; integer versions use
+  polynomial approximation or lookup tables. Errors here are usually tolerable
+  because the functions are smooth and bounded in their effect.
+- **The KV cache** in attention stores keys and values for all past tokens and,
+  for long contexts, dominates memory; quantizing it (to INT8, INT4, or 2-bit) is
+  its own sub-problem, sensitive because errors in cached keys/values compound over
+  the whole sequence. Section 05 treats KV-cache quantization in detail.
+
+The general pattern on edge hardware is a **mostly-integer graph with high-precision
+islands** for the range-sensitive nonlinearities, fused by the compiler to minimize
+the cost of the precision transitions. A model that appears "fully INT8" almost
+always runs its softmax and normalization in higher precision under the hood, and
+whether the NPU can do this efficiently (rather than falling back to a slow path or
+the CPU) is a key hardware capability.
+
+## Non-uniform and codebook quantization
+
+Everything so far assumed *uniform* quantization (equally-spaced levels). But neural
+weights are not uniformly distributed — they are roughly bell-shaped (Gaussian- or
+Laplacian-like), with most mass near zero. **Non-uniform quantization** places levels
+to match this distribution, spending more levels where the data is dense. Three
+flavors appear:
+
+- **Logarithmic / power-of-two** quantization spaces levels geometrically, which
+  matches the heavy-tailed magnitude distribution and turns multiplications into
+  cheap bit-shifts — attractive for hardware, at some accuracy cost.
+- **Companding / NF4-style** formats (QLoRA's NormalFloat) place levels at the
+  quantiles of a reference (normal) distribution, so each level is equally likely —
+  information-theoretically efficient for Gaussian weights. NF4 is the most
+  successful non-uniform format in production.
+- **Codebook / vector quantization** (Deep Compression's k-means, AQLM, QuIP#'s E8
+  lattice) stores a small learned codebook and represents each weight (or group of
+  weights) by an index into it. This can approach the information-theoretic optimum
+  at 2 bits, but the decode step (codebook lookup, possibly multi-codebook sums) is
+  more expensive than a uniform dequantize, which is why codebook methods deliver
+  excellent accuracy-per-bit but slower kernels.
+
+The tradeoff is uniform's hardware-friendliness (a scale and a shift) versus
+non-uniform's better accuracy-per-bit at the cost of lookup/decode complexity.
+Uniform dominates production; non-uniform (NF4, codebooks) wins where the last bit
+of compression matters more than kernel simplicity. Section 04 treats these formats
+as *numeric types* in their own right.
+
+## Debugging quantization: metrics and common pitfalls
+
+Because a quantized model can look fine on aggregate accuracy while failing
+specifically, practitioners rely on finer diagnostics. **Per-layer SQNR** or
+**cosine similarity** between the FP and quantized activations localizes where error
+is injected — a layer with low cosine similarity is the culprit to protect. **Output
+distribution comparison** (KL divergence between FP and quantized logits) catches
+calibration/overconfidence shifts. **Task-specific evaluation**, not just perplexity,
+catches the reasoning/code/long-context degradations that aggregate metrics hide
+(Section 07). The most common pitfalls, in rough order of frequency:
+
+1. **Forgetting batch-norm folding** — quantizing conv and BN separately.
+2. **Bad calibration data** — a distribution mismatch with deployment.
+3. **Per-tensor where per-channel/group is needed** — the classic accuracy leak.
+4. **Quantizing sensitive layers** — embeddings, LM head, first/last layers.
+5. **Ignoring outliers** — no SmoothQuant/rotation on activation quantization.
+6. **Range-sensitive nonlinearities forced to low precision** — softmax/LayerNorm.
+7. **Hardware/scheme mismatch** — a scheme the target NPU cannot execute natively,
+   silently falling back to a slow or higher-precision path.
+
+Each maps directly to a remedy from the sections above, and a disciplined
+"measure per-layer error, protect the worst offenders, re-measure" loop resolves the
+large majority of quantization accuracy problems.
+
 ## Summary
 
 The theory of quantization reduces to a handful of orthogonal choices — the affine
