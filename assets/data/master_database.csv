@@ -60,3 +60,7 @@ Latent AI,startup,compression-sw,edge MLOps + quant,INT8;INT4,production-shipped
 Deeplite,startup,compression-sw,very-low-bit quantization,sub-4-bit,sdk-limited,Extreme edge compression,Deeplite Neutrino,press,13;16
 Femtosense,startup,edge-chip,sparsity tiny NPU,INT8;sparse,sdk-limited,Ultra-low-power always-on,SPU,press,13;16
 Pruna AI,startup,compression-sw,cache+prune+quant+distill,INT8;W4,sdk-limited,Open-source comprehensive optimization,Pruna OSS,press,13;16
+MLPerf / MLCommons,benchmark,benchmark,accuracy-constrained inference benchmark,INT8;FP8;INT4,production-shipped,Cross-vendor accuracy-constrained comparison,MLPerf Inference/Mobile/Tiny/Client,official-spec,15;16
+ONNX (quantization spec),standard,exchange,QDQ/QOperator quant representation,INT8;INT4,production-shipped,Cross-vendor quantized-model exchange,ONNX quant spec,sdk-docs,15;16
+OCP MX formats,standard,numeric,microscaling block-FP standard,MXFP4;MXFP8;MXINT8,sdk-limited,Cross-vendor sub-8-bit format standard,OCP Microscaling spec,official-spec,04;15;16
+lm-evaluation-harness,benchmark,benchmark,LLM quality/accuracy evaluation,any,production-shipped,De-facto LLM accuracy eval,EleutherAI harness,sdk-docs,15;16
