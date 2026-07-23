@@ -528,6 +528,29 @@ Apple's stack demonstrably works at scale — but they are the honest other side
 whole-stack, opaque, ship-the-model strategy, and they matter for anyone evaluating Apple's
 platform against the more open, more disclosed alternatives.
 
+## A note on verification and reading Apple's numbers
+
+Because this section leans more than others on inferred and vendor-claimed information, a
+methodological note is warranted. Apple's TOPS figures should be read with the skepticism
+Section 04 prescribed for all vendor throughput claims — they are peak numbers at unspecified
+precision and utilization, not comparable across vendors, and Apple does not publish the
+measurement methodology. The ANE's precision support is inferred from Core ML Tools
+capabilities (which describe what the *tooling* can produce) and from shipping behavior (what
+Apple Intelligence demonstrably does), not from a datasheet, so statements like "the ANE
+supports INT4" really mean "Core ML can compress to INT4 and target the ANE, and it runs" —
+which is what matters practically but is not the same as a documented hardware datapath. Where
+this section states a precision or a scheme as production, it is grounded in the open-source
+Core ML Tools documentation or Apple's own published research; where it speculates about
+undisclosed internals (FP8 support, exact per-weight bit budgets in Apple Intelligence,
+future roadmap), it is flagged. This epistemic care is not pedantry: Apple's opacity means the
+confident-sounding numbers circulating in coverage of its chips are frequently vendor claims
+repeated without verification, and a technical reference must distinguish what is documented
+(the tooling, the shipping behavior) from what is asserted (the TOPS, the internals). The
+practical guidance for anyone evaluating Apple silicon for quantized deployment is to trust
+the tooling documentation and on-device measurement over the spec-sheet TOPS, and to validate
+performance and accuracy on the actual target device — the same discipline Section 06 and
+Section 07 prescribed, applied with extra force where the vendor discloses least.
+
 ## Master database contributions
 
 This section contributes the following entities to the master database (Section 16): Apple
