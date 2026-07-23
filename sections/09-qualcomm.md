@@ -503,6 +503,42 @@ database: trust the disclosed format support and the open tooling, discount the 
 percentage-improvement marketing, and validate performance and accuracy on the actual target
 device — the discipline that separates a realistic assessment from a spec-sheet reading.
 
+## The on-device model ecosystem on Snapdragon
+
+Unlike Apple, which ships its own models, Qualcomm cultivates an *ecosystem* of models optimized
+for its silicon, and this ecosystem is part of its quantization story. Qualcomm AI Hub provides a
+library of pre-optimized, pre-quantized models (vision, speech, and increasingly LLMs) ready to
+run on Snapdragon, lowering the barrier for developers who do not want to quantize from scratch.
+Qualcomm has worked with model providers to bring popular open models (Llama-class LLMs, Stable
+Diffusion, Whisper, and others) to Snapdragon in quantized form, and its demonstrations often
+feature these community models to show real-world capability. This ecosystem approach means the
+practical quantization work is increasingly done *for* the developer — a pre-quantized model from
+AI Hub, validated on Snapdragon, ready to deploy — which is the accessibility play that
+complements the low-level QNN control path. For the broader landscape, Qualcomm's optimization of
+popular open models for its silicon reinforces the standard quantization schemes (INT4 weight-only,
+INT8) and makes Snapdragon a well-supported target for the open-model ecosystem. The combination
+of a broad-precision NPU, research-backed tooling, and a growing library of pre-quantized models
+is what makes Qualcomm's platform practical for on-device AI at ecosystem scale, not just in
+vendor demos.
+
+## Summary
+
+Qualcomm's quantization story is the most complete among the mobile SoC vendors: it leads on
+disclosed precision breadth (INT2 through FP16 plus FP8 in the 2025 flagship), it backs its
+tooling with original, field-defining research (Data-Free Quantization and AdaRound came from
+Qualcomm AI Research), it offers a spectrum of deployment paths from the low-level QNN SDK to the
+accessible AI Hub, it has demonstrated the full range of on-device generative AI (diffusion and
+LLMs) as existence proofs, and it has extended the whole approach from phones to PCs, automotive,
+XR, and always-on sensing via the unified AI Stack. The defining characteristic is the
+research-silicon-tooling loop — a rare virtuous cycle in which in-house quantization research
+informs NPU design and ships as tooling features — which keeps Qualcomm at the frontier of mobile
+quantization. The honest caveats are the tooling learning curve (mitigated by AI Hub), the usual
+unverified vendor performance claims, and the software-lags-silicon reality for the newest formats
+(INT2, FP8), whose production accuracy remains to be independently demonstrated. But on the core
+question of who leads mobile quantization in silicon and tooling, Qualcomm has the strongest
+overall case, and its influence — via the huge Snapdragon installed base and its role in defining
+the practical precision targets — extends across the entire edge-AI landscape.
+
 ## Master database contributions
 
 This section contributes: Qualcomm (chipmaker, Hexagon NPU), AIMET (framework/PTQ+QAT tool),
