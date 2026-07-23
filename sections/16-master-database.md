@@ -104,6 +104,103 @@ structure, and navigating it by layer (what silicon, what formats, what tooling,
 researches, who commercializes, how it's measured, what it produces) is the most illuminating way to use
 it.
 
+## Precision-support patterns across the full database
+
+Looking across all 92 entities' precision-support fields reveals the field's precision landscape in
+aggregate. **INT8** is the most common precision across the database — supported by essentially every
+chipmaker, framework, and production method, confirming its status as the universal baseline. **INT4/W4**
+is the second-most-common, appearing across the chipmakers, the LLM-quant methods, and the frameworks —
+the on-device-LLM workhorse. **FP16/BF16** appears across the hardware (as the high-precision baseline).
+The **sub-4-bit precisions** (W3, W2, 1.58-bit, binary) appear concentrated in the method and research-lab
+categories (the algorithms and their originators) and sparingly in the chipmaker category (Qualcomm's
+INT2), confirming the sub-4-bit-is-research-frontier pattern. The **low-FP precisions** (FP8, FP4/MXFP4)
+appear in the leading chipmakers (Qualcomm, NVIDIA, and the formats/standards), confirming the
+low-FP-frontier pattern. This aggregate precision view — INT8 universal, INT4 broad, sub-4-bit and low-FP
+concentrated at the frontier — is the database's quantitative confirmation of the precision landscape the
+reference has described qualitatively throughout: the production precisions (INT8, INT4) are broadly
+supported, and the frontier precisions (INT2, FP4, sub-4-bit) are concentrated in the leaders and the
+research community, awaiting broader diffusion. Reading the precision fields across categories is thus a
+way to see the precision landscape's structure from the data itself, and it matches the per-section
+narrative — a useful cross-check that the database's aggregate view is consistent with its detailed one.
+
+## The geographic and geopolitical distribution
+
+Mapping the database entities geographically (drawing on Sections 11–13) reveals the ecosystem's global
+structure. The **chipmakers** span the US (NVIDIA, Intel, AMD, Google, Apple, Qualcomm — mostly US-
+headquartered), East Asia (MediaTek in Taiwan, Samsung in Korea, Huawei in China), and the UK (ARM). The
+**research labs** center on North America (MIT, Berkeley, UW/CMU, Cornell, Meta, Google, Microsoft) with
+strong European (IST Austria, ETH Zurich, Qualcomm AI Research's European presence) and East Asian (KAIST/
+SNU, Tsinghua) contributions. The **startups** span the US (d-Matrix, EnCharge, Hailo-adjacent, SiMa.ai,
+Rain, Latent AI, Femtosense, Together, Fireworks), Europe (Multiverse in Spain, Axelera, Pruna, Embedl),
+Israel (Hailo), and Asia (Kneron, Nota). This distribution shows a **US-centered but genuinely global**
+ecosystem, with the geopolitical bifurcation (Section 11) visible in Huawei's separate positioning and the
+under-representation of Chinese domestic entities (which are less visible in the Western-accessible sources
+this database draws on, a limitation noted below). The geographic view underscores that quantization is a
+globally-pursued field, that the US leads in both silicon and research but does not monopolize either, and
+that the geopolitical dimension (the partial US-China decoupling) is a real structural feature. For a
+complete map, the database's Western-source bias means the Chinese domestic ecosystem is under-represented
+relative to its actual size — a limitation that the geographic view makes explicit and that Section 17's
+methodology note addresses.
+
+## A statistical summary of the database
+
+Some aggregate statistics characterize the database concisely. Of the 92 entities: roughly two-thirds are
+🟢 production-shipped, reflecting a field with a large deployed core; the remainder split between 🟡
+sdk-limited (the emerging frontier) and 🔴 research-only (the aggressive frontier and historical extreme
+methods). By confidence: the chipmaker and framework entities are predominantly official-spec/sdk-docs
+(documented), the method and research-lab entities predominantly paper (peer-reviewed), and the startup
+entities predominantly press (self-reported, lower-confidence) — a confidence distribution that tracks the
+category (hardware/tooling documented, methods peer-reviewed, startups press-reported). By category size:
+methods (25) and startups (20) dominate, followed by frameworks (17), research labs (12), and chipmakers
+(10), with the formats, standards, benchmarks, IP vendors, and model-systems in single digits. These
+statistics paint a field that is deeply technical (many methods), actively commercial (many startups and
+frameworks), research-driven (many labs), and built on a defined silicon base (ten chipmakers) — a mature,
+multi-faceted ecosystem rather than a narrow technical niche. The statistical view is a useful high-level
+characterization: quantization for edge AI is, by the numbers, a field with a large production core, an
+active frontier, a rich method landscape, a substantial commercial ecosystem, and a concentrated but
+global research community — the quantitative signature of a field that has grown from a deployment-
+engineering niche into a central, multi-stakeholder area of AI.
+
+## What the database omits and its limitations
+
+Intellectual honesty requires stating the database's **limitations and omissions**. It is *representative,
+not exhaustive*: the method landscape includes more than 25 methods (many variants and newer methods are
+not individually listed), the startup landscape includes more than 20 companies (especially in China and
+the long tail of seed-stage companies), and the research community includes more than 12 labs. The
+selection favors *impact and prominence* (the entities most discussed and most consequential) over
+completeness. The database also has a *Western-source bias*: the Chinese domestic ecosystem (Huawei aside)
+is under-represented because it is less visible in the Western-accessible sources, and the geopolitical
+bifurcation (Section 11) means a whole parallel ecosystem is thinly covered. The *temporal snapshot* nature
+means the startup information (funding, status) and the frontier-format claims will age. And the
+*maturity/confidence tags*, while carefully assigned, involve judgment (the boundary between sdk-limited
+and production-shipped, or between paper and inferred, is not always crisp). These limitations do not
+undermine the database's value — as a representative, prominence-weighted, honestly-tagged map it serves
+its purpose well — but they should temper any use of it as a complete or definitive census. The database
+is a *useful map*, not a *complete atlas*, and stating its limits is part of the epistemic discipline the
+whole reference embodies. A user should treat it as a comprehensive-enough guide to the field's shape and
+key entities, not as an exhaustive registry, and should supplement it with current sources for
+fast-changing details (startup funding, frontier-format status) and with China-specific sources for the
+under-represented domestic ecosystem.
+
+## The database as a decision tool
+
+Finally, the database is designed to be a **decision tool**, not just a reference, and a few use cases
+illustrate. A **procurement** decision (which silicon for an edge-AI product) can use the chipmaker
+entries and the precision heatmap to match a product's precision needs (INT8 for vision, INT4 for LLMs,
+FP8/FP4 for the frontier) to the vendors' support, and the maturity/confidence tags to weight disclosed
+versus inferred capabilities. A **method-selection** decision (which quantization method for a deployment)
+can use the method entries, their maturity (production vs. research), and their precision/focus to pick
+the appropriate method (the Section 05 guidance, indexed here). A **research-orientation** decision (where
+to focus research or track the field) can use the research-lab entries and the open-problems map (Section
+14) to see who is working on what. An **investment or competitive** decision can use the startup entries,
+their funding/stage, and the competitive map. And a **learning** path can use the section references to
+navigate to the relevant depth. The database's design — categorized, tagged, cross-referenced, and
+regeneratable — supports all these uses, making it a practical tool for the decisions the reference's
+audience faces, not just a passive catalog. This decision-tool orientation is the database's ultimate
+purpose: to turn the reference's comprehensive detail into an actionable map that supports real decisions
+about quantization for edge AI, from procurement to method selection to research orientation to
+investment.
+
 ## The consolidated master table
 
 The full deduplicated table follows, organized by category and sorted alphabetically within each. The
