@@ -747,7 +747,8 @@ Apple, Qualcomm, and MediaTek entries from Sections 08–10, these constitute th
 framework backbone of the master database, spanning the full range of edge-AI silicon and the
 tooling that quantizes for it — from tinyML IP to AI-PC NPUs to edge GPUs — and they anchor the
 cross-player analysis that Section 16 consolidates into a single deduplicated table. See Section 16
-for the full consolidated entries with their maturity and confidence tags.
+for the full consolidated entries with their maturity and confidence tags, deduplicated and
+cross-referenced across every section of this database.
 
 ---
 
