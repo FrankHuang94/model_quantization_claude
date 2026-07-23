@@ -518,7 +518,13 @@ that fundamental role — only its depth, breadth, and degree of integration wil
 
 This section adds no new entities (it is forward-looking), but it maps the open problems and anticipated
 developments that the entities of Sections 08–13 will address — see the open-problems table above and
-Section 16 for the consolidated entity view.
+Section 16 for the consolidated entity view. The forward-looking value of the master database is
+precisely that it captures the entities positioned to shape these trends: the chipmakers provisioning
+frontier-format silicon, the research labs pursuing the sub-4-bit and native-training frontiers, the
+startups betting on in-memory compute, and the standards efforts driving consolidation. Tracking those
+entities' progress against the open problems and scenario ranges laid out here is the practical way to
+see which of the possible futures is materializing — and the database is structured to support exactly
+that kind of longitudinal tracking as the roadmap unfolds.
 
 ---
 
