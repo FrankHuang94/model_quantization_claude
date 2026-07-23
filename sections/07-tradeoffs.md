@@ -525,9 +525,17 @@ The disciplined stance is therefore not "quantize as aggressively as possible" b
 to the least aggressive scheme that meets the resource constraint, and validate on the
 tasks and slices that matter." Follow that and quantization is one of the highest-leverage,
 lowest-regret optimizations in edge AI; ignore the validation discipline and it is a source
-of subtle, hard-to-diagnose production failures. The vendor sections that follow (08–11)
-describe the silicon that determines *which* points on this tradeoff curve are actually
-reachable on a given device.
+of subtle, hard-to-diagnose production failures. If this section is reduced to a single
+operating rule, it is this: **quantize as little as the resource budget forces, choose the
+scheme jointly with the model size and the target hardware, and validate the result on the
+tasks, slices, and risks that actually matter — measured on the device, reported as a delta,
+never as a single headline number.** That rule captures the smooth-wins-versus-lumpy-costs
+asymmetry, the concentrated-failure risk, the model-size interaction, and the co-design
+dependency all at once, and it is the posture that has made quantization the near-universal,
+low-regret default it is today. The vendor sections that follow (08–11) describe the silicon
+that determines *which* points on this tradeoff curve are actually reachable on a given
+device — because, as Section 06 established, the tradeoff is not purely a property of the
+algorithm but of the algorithm, the compiler, and the silicon together.
 
 ---
 
