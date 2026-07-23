@@ -626,6 +626,14 @@ cost.
 This section contributes research-lab entities to the master database (Section 16): MIT HAN Lab, IST
 Austria (Alistarh), UW/Dettmers, UC Berkeley (Keutzer), Microsoft Research, Cornell (De Sa), Meta FAIR,
 Google Research/DeepMind, and ETH Zurich (Qualcomm AI Research was added in Section 09) — see Section 16.
+These research-lab entries, together with the chipmakers and frameworks of Sections 08–11 and the
+startups of Section 13, complete the entity taxonomy of the master database, which spans the full
+ecosystem — silicon, tooling, methods, research labs, and companies — that produces and deploys
+quantization. The research labs are distinguished in the database by their category (research-lab) and
+their notable-output field (the landmark methods), and their appearance alongside the commercial
+entities underscores the section's central theme: in quantization, the boundary between research and
+production is porous, and the labs that produce the methods are as much a part of the deployed
+landscape as the vendors that ship them.
 
 ---
 
