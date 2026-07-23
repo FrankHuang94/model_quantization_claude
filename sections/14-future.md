@@ -532,4 +532,8 @@ that kind of longitudinal tracking as the roadmap unfolds.
 
 ---
 
+The roadmap ahead is one of continued descent, deeper integration, broader access, and greater
+automation, anchored always by the permanence of the resource constraints that make quantization
+indispensable.
+
 *Next: [15 — Standards and Benchmarks](./15-standards-benchmarks.md).*
