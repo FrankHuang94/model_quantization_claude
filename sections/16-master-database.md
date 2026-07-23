@@ -201,6 +201,47 @@ purpose: to turn the reference's comprehensive detail into an actionable map tha
 about quantization for edge AI, from procurement to method selection to research orientation to
 investment.
 
+## Cross-referencing the database with the reference's themes
+
+The database also serves as a check that the reference's cross-cutting themes are grounded in concrete
+entities rather than abstract assertions. The **co-design theme** (Section 06) is instantiated by the
+entities that span the algorithm-hardware boundary: the MX formats (both a quantization technique and a
+hardware numeric), Qualcomm AI Research (research informing silicon), MIT HAN Lab (co-design methods), and
+the transformer-aware NPUs (AMD's XDNA2 hardware primitives). The **industry-academia blurring theme**
+(Section 12) is instantiated by the dual-role entities (Qualcomm AI Research, Google, Meta FAIR) and the
+corporate research labs (Microsoft, Meta) appearing alongside universities. The **hardware-ahead-of-
+software theme** (Sections 04, 06) is instantiated by the precision heatmap (INT2/FP4 in flagship silicon
+ahead of the software) and the frontier methods (research-only, awaiting production). The **commoditization
+theme** (Section 13) is instantiated by the open-source frameworks (bitsandbytes, llama.cpp, ONNX Runtime)
+and the acquired startups (Neural Magic, Deci). The **multipolar theme** (Section 11) is instantiated by
+the ten chipmakers and the many frameworks, none dominating all dimensions. And the **production-vs-
+frontier theme** (throughout) is instantiated by the maturity distribution (a large production core, an
+emerging middle, a research frontier). This grounding of the themes in concrete entities is a validation
+that the reference's synthesis is not abstract hand-waving but a distillation of the actual landscape — the
+themes emerge from the entities, and the database is where one can verify that. A reader skeptical of any
+of the reference's cross-cutting claims can consult the database to see the entities that instantiate it,
+which is part of the database's value as the reference's evidentiary backbone: it is where the qualitative
+synthesis meets the concrete data, and where the two are shown to be consistent.
+
+## Navigating from the database to the depth
+
+A practical note on using the database as an **index into the reference's depth**: every entity's section-
+reference column points to where it is discussed in detail, so the database is the entry point for
+navigating to any topic's full treatment. A reader interested in, say, GPTQ can find it in the method
+category, see its production-shipped maturity and W4/W3 precision, and follow the reference to Section 05
+for the full treatment (the error-compensation mechanism, the GPTQ-vs-AWQ comparison, the workflow
+diagram). A reader interested in Qualcomm can find it in the chipmaker category, see its broad precision
+support, and follow to Section 09 for the Hexagon evolution, AIMET, and the research-silicon-tooling loop.
+This index function makes the database the natural starting point for using the reference: rather than
+reading linearly, a reader can locate an entity of interest in the database and jump to its depth. The
+database thus serves both the top-down user (survey the landscape via the categories and charts, then
+drill into entities of interest) and the bottom-up user (find a specific entity, then explore its context
+and relationships). Combined with the README's table of contents, the database is the reference's primary
+navigation aid, turning a large multi-section document into a navigable, queryable resource. This
+navigational role, alongside its analytical and decision-tool roles, makes the master database the
+reference's keystone — the section that ties the whole together and makes it usable as a reference rather
+than merely readable as a document.
+
 ## The consolidated master table
 
 The full deduplicated table follows, organized by category and sorted alphabetically within each. The
