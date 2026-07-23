@@ -586,6 +586,126 @@ Each maps directly to a remedy from the sections above, and a disciplined
 "measure per-layer error, protect the worst offenders, re-measure" loop resolves the
 large majority of quantization accuracy problems.
 
+## Mixed-precision allocation: how to spend a bit budget
+
+Uniform bit-width across a whole model is rarely optimal. **Mixed-precision
+quantization** assigns different bit-widths to different layers (or even different
+tensors within a layer), spending precision where it buys the most accuracy. The
+problem is a constrained optimization: minimize accuracy loss subject to a total
+size or latency budget. Three approaches are used in practice.
+
+**Sensitivity-based (Hessian) allocation**, as in HAWQ, ranks layers by a
+sensitivity metric — typically the product of the Hessian trace (curvature) and the
+quantization perturbation magnitude — and assigns higher precision to the most
+sensitive layers. The intuition is that the loss increase from quantizing a layer is
+approximately the sensitivity times the squared quantization noise, so equalizing
+the *marginal* loss-per-bit across layers is optimal, and that means giving more bits
+to high-curvature layers. This is a principled, data-light method and underlies most
+automated mixed-precision tooling.
+
+**Search-based allocation** treats the per-layer bit-width as a discrete search space
+and uses reinforcement learning, evolutionary search, or integer programming to find
+an allocation that meets the budget (HAQ and successors). More expensive but can find
+non-obvious allocations, and can directly optimize for a hardware latency model
+rather than a proxy like size.
+
+**Heuristic allocation** — the workhorse in practice — applies domain knowledge:
+keep embeddings and the LM head at 8-bit, keep the first and last transformer blocks
+higher, quantize the bulk of the middle layers aggressively, and keep all
+normalization and softmax in FP16. This captures most of the benefit of the
+principled methods at essentially no search cost, which is why it dominates real
+deployments. The GGUF k-quant schemes encode exactly this philosophy: they use
+*more* bits for the attention and feed-forward weights that matter and *fewer* for
+the rest, mixing bit-widths within a single "4-bit" model.
+
+The interaction with hardware is critical: mixed precision only helps if the target
+can *execute* multiple precisions efficiently. An NPU with fast INT8 and INT4 paths
+benefits; one that must emulate INT4 by unpacking to INT8 may see no speedup, only
+the memory saving. This is why the mixed-precision *format* support in Section 04 and
+the hardware support in Section 06 gate which allocation strategies are worth doing.
+
+## Scale-storage economics: the true cost of granularity
+
+Finer granularity improves accuracy but stores more scales, and at low bit-widths the
+scale overhead is a real fraction of the budget — a point often glossed over. Consider
+a weight matrix quantized to a nominal 4 bits with 16-bit (FP16) scales:
+
+- **Per-channel**: one scale per output channel. For a `4096 × 4096` matrix that is
+  4096 scales over 16.7M weights — `16 · 4096 / 16.7M ≈ 0.004` bits/weight. Negligible.
+- **Per-group, g=128**: one scale per 128 input elements per channel. That is
+  `4096 · (4096/128) = 131,072` scales — `16 · 131072 / 16.7M ≈ 0.125` bits/weight,
+  raising the *effective* bit-width from 4.0 to ~4.13.
+- **Per-group, g=32**: four times as many scales — ~0.5 bits/weight, an effective
+  ~4.5 bits.
+
+So per-group g=32 "4-bit" quantization actually stores about 4.5 bits per weight —
+more than an honest 4-bit budget. This is why the accuracy comparison between methods
+must be made at *equal effective bits*, not equal nominal bits, and why sub-4-bit
+methods aggressively compress the scales themselves. **Double quantization** (QLoRA)
+quantizes the FP16 scales to 8-bit with a second-level scale, cutting the scale
+overhead by roughly half. **Shared/hierarchical scales** (a super-block scale plus
+small per-block deltas, as in GGUF k-quants) do the same. The general lesson: below
+~4 bits, the metadata is part of the budget, and honest accounting counts it. A
+method that quietly uses g=32 FP16 scales and reports "2-bit" may be closer to 2.5–3
+effective bits — a distinction that matters enormously when comparing to a true-2-bit
+codebook method.
+
+## Error compensation: the GPTQ mechanism, mathematically
+
+The single most important algorithmic idea bridging this section to the named LLM
+methods of Section 05 is **error compensation**, and it is worth stating precisely
+because it is frequently hand-waved. Consider quantizing the weights of one linear
+layer, column by column. When you quantize column `j` from its true value `w_j` to
+`ŵ_j`, you introduce an error `δ_j = w_j − ŵ_j`. Naive quantization would just accept
+this error. Error compensation instead *adjusts the not-yet-quantized columns* to
+absorb it: it computes how the layer's output would change due to `δ_j` and adds a
+correction to the remaining columns that cancels that change as much as possible, in
+a least-squares sense.
+
+The correction direction is determined by the inverse of the layer's input
+second-moment matrix `H = X Xᵀ` (the Hessian of the layer's reconstruction loss with
+respect to the weights, where `X` are the calibration activations). This is the
+**Optimal Brain Surgeon** framework, adapted from 1990s network pruning: quantizing a
+weight is a perturbation, and OBS tells you the optimal compensating adjustment to the
+surviving weights. GPTQ's contribution was making this tractable at billion-parameter
+scale — processing columns in a fixed order, using a Cholesky factorization of `H⁻¹`
+for numerical stability, and updating in blocks for efficiency. AdaRound's learned
+rounding, BRECQ's block reconstruction, and GPTQ's OBS compensation are all variations
+on one theme: **choose the quantized weights to minimize the layer's output error,
+using the calibration statistics, rather than to minimize the weight error in
+isolation.** Understanding this makes the Section 05 method zoo far less mysterious —
+most of it is error compensation plus a specific outlier-handling trick.
+
+## Quantization in the training loop vs. at inference
+
+A clarifying distinction that trips up newcomers: quantization appears in three
+different roles, with different constraints.
+
+1. **Inference quantization** (the focus of most of this database) compresses a
+   trained model for deployment. Determinism matters, calibration matters, and the
+   target hardware's supported formats govern everything.
+2. **Quantization-aware training** simulates inference quantization *during* training
+   so the model adapts, but the training arithmetic itself is still high-precision —
+   the fake-quant nodes round in FP. QAT's cost is a training run; its payoff is
+   low-bit accuracy.
+3. **Low-precision training** actually performs the training arithmetic (forward,
+   backward, and optimizer) in reduced precision — FP16/BF16 mixed-precision training
+   is now universal, and FP8 training is production in the data center, with FP4
+   training demonstrated on Blackwell. This is a different problem from inference
+   quantization: it must preserve *gradient* information across many small updates,
+   which is why it relies on loss scaling, high-precision master weights, and
+   stochastic rounding in the accumulation path. Quantization-native architectures
+   (BitNet) blur the line by training with quantized *weights* but higher-precision
+   optimization state.
+
+The three share mathematics (the affine mapping, STE) but differ in what must be
+preserved: inference quantization preserves the *function*, low-precision training
+preserves the *gradient signal*. Conflating them leads to confusion — e.g. assuming
+that because FP4 training works, FP4 *inference* of an FP16-trained model is easy
+(it is not; they are different regimes). Section 04 treats the numeric formats that
+serve all three roles, and Section 14 returns to low-precision training as a forward
+trend.
+
 ## Summary
 
 The theory of quantization reduces to a handful of orthogonal choices — the affine
