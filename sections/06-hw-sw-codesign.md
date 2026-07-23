@@ -598,6 +598,50 @@ often "a DSP that grew tensor units" clarifies both its strengths (efficient int
 math, flexible operator support) and the design choices in its quantization support, and
 it is a thread that recurs in the Qualcomm and MediaTek roadmaps of Sections 09–10.
 
+## The exchange-format problem
+
+A cross-cutting friction worth isolating is that there is no single, universally-honored
+representation for a quantized model, and this fragmentation costs the ecosystem real
+effort. A model quantized in PyTorch might be exported to ONNX (in QDQ or QOperator form),
+to TFLite/LiteRT, to Core ML, to GGUF, or to a vendor-specific format — and these are not
+freely interconvertible, especially for the finer schemes (per-group INT4, mixed
+precision, novel formats). ONNX is the nearest thing to a lingua franca, and its
+quantization representation has matured, but vendor compilers vary in which ONNX
+quantization constructs they accept and how faithfully they preserve the intended scheme.
+The consequences: a quantization that works on one target often must be redone for another;
+accuracy can drift across the conversion if the target interprets a scale or rounding
+differently; and tooling authors must support a matrix of formats. This is why the
+standardization efforts of Section 15 (ONNX quantization spec evolution, the MLIR quant
+dialect, the OCP format standards) matter beyond their technical content — they are
+attempts to reduce a fragmentation tax that everyone pays. For a practitioner, the
+defensive posture is to quantize *for the target* using the target's preferred path rather
+than hoping a generically-quantized model converts cleanly, and to validate accuracy after
+every format conversion, not just after quantization.
+
+## Custom accelerators and the long tail of edge hardware
+
+Beyond the named mobile and GPU vendors, a long tail of edge hardware runs quantized
+models, and it shapes the tooling landscape. **FPGAs** (from AMD/Xilinx and Intel/Altera)
+implement custom quantized datapaths — including arbitrary bit-widths and non-standard
+formats — which makes them a favorite for research into exotic quantization (binary,
+ternary, mixed per-layer bit-widths) and for low-volume, high-value deployments (industrial,
+aerospace, telecom) where a custom quantized accelerator is worth the design effort. FPGA
+toolchains (Xilinx's FINN for binary/low-bit networks, Vitis AI for INT8) are notable for
+supporting bit-widths mainstream NPUs do not. **Microcontroller-class hardware** (Arm
+Cortex-M with CMSIS-NN, Ethos-U microNPUs, and a range of tinyML silicon) runs INT8 (and
+increasingly INT4) models in kilobytes-to-megabytes of memory for always-on sensing, where
+quantization is not optional but existential — the model simply must fit in on-chip SRAM.
+And a wave of **AI-accelerator startups** (Section 13) builds custom silicon with distinctive
+quantization stances (native low-bit, block floating point, in-memory compute), each with
+its own compiler. This long tail matters for two reasons: it is where the most aggressive
+and unusual quantization (sub-4-bit, custom formats, CIM-driven) is actually deployed,
+because custom silicon can commit to a format the mass-market vendors will not; and it keeps
+the portable compiler stacks (TVM, MLIR/IREE, ONNX Runtime) relevant, since these are the
+only realistic path to targeting heterogeneous long-tail hardware without a bespoke
+toolchain per device. The mass-market NPUs define the mainstream, but the long tail is where
+quantization's frontier formats often ship first, precisely because a custom accelerator can
+be co-designed around a single format in a way a general-purpose SoC cannot.
+
 ## Summary
 
 Hardware–software co-design is where quantization theory meets physical reality. The
