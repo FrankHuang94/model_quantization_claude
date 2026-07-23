@@ -210,6 +210,151 @@ Qualcomm's strategic bet — that on-device generative AI runs on aggressively-q
 a broad-precision NPU — is well-aligned with where the field is going, and its research depth
 makes it likely to stay at or near the frontier.
 
+## Inside the Hexagon NPU: scalar, vector, tensor, and micro-tile inferencing
+
+The Hexagon NPU's internal structure explains its quantization strengths. It fuses three kinds
+of processing unit: **scalar** accelerators (for control and elementwise operations),
+**vector** accelerators (the HVX SIMD units, for parallel elementwise and reduction work), and
+**tensor** accelerators (for the matrix multiplies that dominate neural networks). The 8 Elite
+Gen 5 generation reportedly increased the counts of these units substantially. This
+heterogeneous-within-the-NPU design lets the Hexagon handle the mixed operation types of a real
+model — the matmuls on the tensor units, the activations and normalizations on the vector
+units, control on the scalar units — without offloading to the GPU or CPU, which minimizes the
+fallback penalties of Section 06. For quantization specifically, the tensor accelerator's
+native support for INT4/INT8/INT16 (and now INT2/FP8) is what turns a quantized model into a
+compute speedup rather than just a memory saving.
+
+**Micro-tile inferencing**, introduced with the Snapdragon 8 Gen 2 and refined since, is a
+Qualcomm-specific technique worth understanding. It breaks the quantized matmul into small
+tiles processed efficiently through the tensor accelerator, improving utilization for the
+irregular, memory-bound patterns of generative-AI workloads (where large regular matmuls are
+less common than in vision). This is a hardware-software co-design response to the shift from
+convolutional vision (large regular matmuls, systolic-array-friendly) to transformer
+generative AI (smaller, memory-bound matmuls) — Qualcomm engineered the NPU's execution to
+suit the new workload. **Direct Link** (8 Gen 3) and large shared-memory concurrency further
+optimize the data movement for on-device LLMs, addressing the memory-bandwidth bottleneck that
+Section 06's roofline identified as the binding constraint for LLM decode. These techniques
+illustrate that Qualcomm's NPU advantage is not just precision breadth but execution
+efficiency tuned for quantized generative workloads — the co-design the whole database keeps
+returning to.
+
+## The heterogeneous Snapdragon compute fabric
+
+The Hexagon NPU does not work alone; it is one engine in Snapdragon's heterogeneous compute
+fabric, and Qualcomm's framing emphasizes using all of them together. Alongside the NPU sit the
+**Adreno GPU** (which can also run neural workloads, and is used for some LLM and graphics-
+adjacent AI), the **Kryo** (and newer **Oryon**, from the Nuvia acquisition) **CPU** cores,
+and a low-power **Sensing Hub** for always-on workloads. Qualcomm's "heterogeneous computing"
+message is that different AI workloads (or different parts of one workload) map best to
+different engines: the NPU for sustained, efficient quantized inference; the GPU for parallel
+workloads and some LLM paths; the CPU for control and small models; the Sensing Hub for
+always-on, ultra-low-power sensing (wake-word, activity detection) where INT8/INT4 tiny models
+run continuously within a microwatt-to-milliwatt budget. Quantization is central across the
+fabric — the NPU and Sensing Hub are integer-centric by design, and the whole fabric is built
+to run quantized models efficiently. For a developer, the runtime and Qualcomm's tooling
+handle the partitioning (Section 06's heterogeneous execution), and the goal is to keep the
+quantized workload on the efficient NPU/Sensing Hub rather than falling back to the
+power-hungry CPU/GPU. This fabric view is how Qualcomm thinks about on-device AI — not as an
+NPU in isolation but as a coordinated set of engines, with quantization as the common language
+that lets models run efficiently on the integer-optimized ones.
+
+## AIMET workflow in depth
+
+AIMET's practical workflow follows the PTQ-to-QAT escalation of Section 03, exposed through a
+PyTorch- and ONNX-friendly API. A typical flow: import the trained model, apply
+**cross-layer equalization** and **bias correction** (Qualcomm's DFQ techniques) to make the
+model quantization-friendly with no data, then apply **AdaRound** (learned rounding) with a
+small calibration set to recover INT4/INT8 accuracy, configure **per-channel** (and per-group)
+quantization and **mixed precision** (per-layer bit-widths), simulate the quantized accuracy,
+and — if PTQ is insufficient — escalate to **QAT** with fine-tuning. AIMET's quantization
+simulation ("QuantSim") lets developers evaluate quantized accuracy before deploying, and its
+integration with the QNN deployment path means the AIMET-quantized model targets the Hexagon
+NPU's supported schemes. The key practical value is that AIMET's methods are the *reference
+implementations* of DFQ and AdaRound — a developer using AIMET is using the techniques'
+originators' code, tuned for Qualcomm silicon. AIMET also supports **AIMET ONNX** (for the ONNX
+ecosystem) and provides the **AIMET Model Zoo** of pre-quantized models as starting points.
+The workflow's alignment with the Hexagon NPU's capabilities (per-channel, per-group, mixed
+precision, INT4/INT8) means AIMET quantization maps cleanly to the hardware, avoiding the
+scheme-hardware mismatches of Section 06. This tight tool-silicon co-design, backed by the
+research that produced the methods, is AIMET's distinguishing strength over generic
+quantization toolkits.
+
+## Qualcomm AI Research: the technique lineage in detail
+
+Qualcomm AI Research's quantization contributions deserve enumeration because they are so
+central to the field. **Data-Free Quantization** (Nagel, van Baalen, Blankevoort, Welling,
+ICCV 2019) introduced cross-layer equalization and bias correction, enabling INT8 quantization
+with no calibration data — a foundational PTQ technique now in every toolkit. **AdaRound**
+(Nagel et al., ICML 2020) showed that learned per-weight rounding to minimize output error
+beats nearest-rounding, reframing PTQ as a local optimization and seeding the lineage that
+leads to GPTQ. Qualcomm researchers also contributed to **mixed-precision** methods,
+**transformer quantization** analysis (including work on the activation-outlier problem),
+**quantization-aware training** advances, and surveys that shaped the field's understanding
+(the widely-cited "A White Paper on Neural Network Quantization" came from Qualcomm AI
+Research). This body of work means Qualcomm did not merely adopt quantization — it helped
+*invent* the modern PTQ toolkit. The strategic consequence is the research-silicon-tooling loop:
+the researchers who understand quantization deeply inform how the Hexagon NPU is designed
+(what precisions and granularities to support, how to execute them efficiently) and what AIMET
+implements. This loop is rare — most silicon vendors consume quantization research rather than
+produce it — and it is a durable reason Qualcomm stays at the mobile-quantization frontier.
+In the master database, Qualcomm AI Research ranks alongside the academic labs of Section 12 as
+a primary source of quantization technique.
+
+## Case study: an INT4 LLM on the Hexagon NPU
+
+To ground the stack, trace a 7B LLM to a Snapdragon phone. The model is quantized with AIMET
+to INT4 weight-only (per-channel/per-group, with sensitive layers — embedding, output — kept at
+INT8 or FP16, and mixed precision configured for the Hexagon's capabilities). AIMET's QuantSim
+validates the accuracy; the model is compiled via QNN (or AI Hub) to a Hexagon context binary.
+On-device, the INT4 weights (a quarter the FP16 traffic) let the memory-bound decode run at
+interactive speed on the Hexagon NPU, with micro-tile inferencing and Direct Link optimizing
+the small memory-bound matmuls, and the KV cache quantized to reduce its memory. The tensor
+accelerator executes the INT4 matmuls natively (real compute path, not unpacked emulation),
+the vector units handle the normalizations and activations, and the workload stays on the NPU
+(avoiding CPU/GPU fallback). The result is a capable on-device LLM — the kind Qualcomm
+demonstrates publicly — enabled by the combination of INT4 quantization (memory win), native
+INT4 hardware (efficient execution), micro-tile inferencing (utilization on memory-bound
+matmuls), and AIMET's accurate quantization (preserving capability). The case shows every
+layer of the Qualcomm stack working together, and it is the on-device generative-AI story
+Qualcomm's strategy is built around. The same recipe on the Snapdragon 8 Elite Gen 5 could use
+INT2 for parts of the model or FP8 for activations, pushing further — though those newer formats'
+accuracy on production models remains to be independently demonstrated (⚠️).
+
+## The Qualcomm AI Stack and cross-platform strategy
+
+Qualcomm unifies its tooling under the **Qualcomm AI Stack**, a framework spanning its product
+lines — mobile (Snapdragon), PC (Snapdragon X), automotive (Snapdragon Ride), IoT, and XR —
+with common tooling (AIMET, QNN/AI Engine Direct, AI Hub) so that a quantization workflow
+transfers across targets. This cross-platform strategy matters because it makes Qualcomm's
+integer-centric, aggressively-quantized NPU approach a consistent target across a huge range of
+devices, from earbuds to cars. For quantization, it means the same AIMET-quantized INT4/INT8
+model can, in principle, target Snapdragon silicon across markets, and the same research and
+tooling investment amortizes across all of them. The automotive and XR markets in particular
+have stringent power and latency constraints that make quantization essential, and Qualcomm's
+unified stack extends its mobile-derived quantization expertise into them. The breadth of the
+AI Stack is part of why Qualcomm's quantization influence is large — it is not confined to
+phones but spans the edge-computing landscape, making Qualcomm's precision choices (INT4, INT2,
+FP8) de-facto targets that model authors and tool builders must support to reach Qualcomm's
+broad installed base.
+
+## Business context: the OEM model and its quantization implications
+
+A structural difference from Apple worth noting: Qualcomm sells silicon and tooling to OEMs
+(Samsung, Xiaomi, and many others) and to app developers, rather than shipping its own devices
+and models. This shapes its quantization strategy. Because OEMs and third-party developers bring
+their own models, Qualcomm must expose its NPU's capabilities through SDKs (QNN, AIMET, AI Hub)
+and support standard formats and runtimes (ONNX, LiteRT) so a broad ecosystem can target its
+silicon — hence the emphasis on disclosed precision support, open-source tooling, and
+accessibility (AI Hub). This is the opposite of Apple's integrated, opaque, ship-the-model
+approach, and it is why Qualcomm discloses more (it must, to enable its ecosystem) and why its
+tooling is developer-facing. The OEM model also means Qualcomm's quantization schemes become
+industry targets — because so many devices use Snapdragon, supporting Qualcomm's INT4/INT8/INT2
+NPU is important for any model author targeting Android, which amplifies Qualcomm's influence on
+the practical quantization landscape beyond its own tooling. The business model and the
+quantization strategy are thus tightly linked: selling silicon to a broad ecosystem requires
+open, disclosed, well-tooled quantization support, which Qualcomm provides, reinforcing its
+position as the mobile quantization platform.
+
 ## Master database contributions
 
 This section contributes: Qualcomm (chipmaker, Hexagon NPU), AIMET (framework/PTQ+QAT tool),

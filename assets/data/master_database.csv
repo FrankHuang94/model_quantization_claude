@@ -19,3 +19,8 @@ Apple,chipmaker,mobile-soc,ANE + Core ML palettization/INT4,INT8;INT4;palettized
 Core ML / coremltools,framework,ptq-tool,palettization + linear + joint compression,INT8;INT4;1-8bit palettize,production-shipped,Codebook palettization tuned for ANE,coremltools,sdk-docs,08;16
 MLX,framework,inference-runtime,group-wise low-bit quant + on-device finetune,INT4;lower,production-shipped,Unified-memory native LLM framework,mlx-lm,sdk-docs,08;16
 Apple Intelligence,model-system,on-device-llm,mixed ~3.5-4 bit base + LoRA adapters,~3.5-4 bit avg,production-shipped,Quantized 3B base + swappable adapters + PCC,on-device foundation model,press;inferred,08;16
+Qualcomm,chipmaker,mobile-soc,Hexagon NPU broad-precision + micro-tile,INT2;INT4;INT8;INT16;FP8;FP16,production-shipped,Broadest disclosed mobile precision support,Snapdragon 8 Elite Gen 5 Hexagon,official-spec,09;16
+AIMET,framework,ptq-tool,DFQ + AdaRound PTQ + QAT + mixed precision,INT4;INT8;INT16,production-shipped,Ships Qualcomm's own DFQ/AdaRound methods,AIMET open source,sdk-docs,09;16
+AI Engine Direct (QNN),framework,compiler,NPU compile + deploy,INT2;INT4;INT8;FP8;FP16,production-shipped,Low-level Hexagon deployment SDK,QNN SDK,sdk-docs,09;16
+Qualcomm AI Hub,framework,inference-runtime,auto-optimize + compile for Snapdragon,INT4;INT8,production-shipped,Accessible model optimization service,AI Hub,sdk-docs,09;16
+Qualcomm AI Research,research-lab,academic,PTQ technique invention,INT4;INT8;low-bit,production-shipped,Invented DFQ and AdaRound,DFQ/AdaRound papers,paper,09;12;16
