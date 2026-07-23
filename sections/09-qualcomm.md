@@ -210,6 +210,22 @@ Qualcomm's strategic bet — that on-device generative AI runs on aggressively-q
 a broad-precision NPU — is well-aligned with where the field is going, and its research depth
 makes it likely to stay at or near the frontier.
 
+Looking further out, several forces will shape Qualcomm's quantization trajectory. The
+industry convergence on the microscaling (MX) formats (Section 04) — which Qualcomm helped
+standardize as an OCP participant — suggests future Hexagon generations will likely add native
+MXFP4/MXFP8 support, aligning the mobile NPU with the data-center format direction and
+simplifying model portability across the edge-cloud boundary. The maturation of rotation methods
+and quantization-native training (Section 05) could make the INT2 hardware Qualcomm already ships
+genuinely useful, closing the software-lags-silicon gap the 8 Elite Gen 5 currently embodies.
+And the agentic-AI framing Qualcomm has adopted implies on-device models that run longer and more
+autonomously, intensifying the energy and memory pressures that make quantization essential —
+which plays to Qualcomm's strengths. The competitive pressure from MediaTek (Section 10) on
+silicon and from Apple on integration will keep Qualcomm investing, and its research arm gives it
+the means to respond. The most likely trajectory is continued precision-frontier leadership,
+deeper tooling accessibility, broader cross-market reach, and a steady closing of the
+silicon-software gap on the aggressive formats it has already provisioned — all anchored by the
+research-silicon-tooling loop that is its structural advantage.
+
 ## Inside the Hexagon NPU: scalar, vector, tensor, and micro-tile inferencing
 
 The Hexagon NPU's internal structure explains its quantization strengths. It fuses three kinds
