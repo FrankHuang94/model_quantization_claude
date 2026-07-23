@@ -595,6 +595,25 @@ boundary means corporate research labs are first-class contributors alongside un
 tracking where quantization is heading, watching these groups is the best leading indicator — their
 current work is next year's production tooling.
 
+Several meta-observations complete the picture. The field advances through recognizable *modes* — scaling
+a principled idea, finding the simple robust insight, opening a new capability, applying deep theory, and
+challenging the paradigm — and knowing these modes helps anticipate where impact will come from. Its
+resource gradient (compute-heavy directions favoring well-funded labs, compute-light PTQ accessible to
+all) shapes what gets studied where, with the open-model ecosystem partly leveling the field. Its
+geographic distribution is global with a North American center of gravity and a growing, partially-
+decoupled Chinese ecosystem. And its self-organization — surveys, shared benchmarks, reference
+implementations — is maturing, moving the field from a collection of methods toward an organized
+discipline. The single most important structural fact remains the tight research-to-production coupling
+enabled by the open-source, open-model dynamic: nowhere else in ML does a paper become deployed tooling
+so fast, which makes the leading quantization researchers unusually consequential and makes tracking
+their work the surest way to see the future of on-device and cost-efficient AI. The field's trajectory
+— from a deployment-engineering niche to a central, globally-distributed, industry-entangled ML research
+area — reflects quantization's rise to strategic centrality, and its continued vitality is assured by the
+permanence of the resource constraints (memory, energy, cost) that make quantization indispensable. As
+long as models are larger than the hardware that must run them, quantization research will remain a
+frontier, and the groups mapped in this section will keep shaping what AI can be deployed and at what
+cost.
+
 ## Master database contributions
 
 This section contributes research-lab entities to the master database (Section 16): MIT HAN Lab, IST
