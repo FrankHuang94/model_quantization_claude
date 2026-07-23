@@ -379,6 +379,73 @@ could arrive sooner than expected, and the roadmap should be revisited as they d
 practical way to track the future: rather than committing to specific predictions, watch for these
 developments, and update the expected trajectory as they materialize or fail to.
 
+## Regulatory, standards, and policy drivers
+
+A less-discussed but real force on the roadmap is the influence of **regulation, standards, and policy**.
+Several strands could shape quantization's future. **Energy/sustainability regulation** — if AI energy
+consumption draws regulatory attention (efficiency mandates, carbon accounting), the pressure to reduce
+inference energy via quantization would intensify, accelerating adoption of aggressive quantization and
+efficient hardware. **Privacy regulation** — data-protection rules favoring on-device processing (keeping
+data local) would boost on-device AI, which quantization enables, driving demand for efficient on-device
+models. **Standards development** — the maturation of quantization standards (ONNX quantization spec, the
+OCP MX formats, and Section 15's benchmark efforts) will shape the tooling consolidation and
+interoperability, and standards bodies' choices will influence which formats and methods become
+dominant. **Sovereign-AI policy** — governments' pushes for domestic AI-compute capability (Section 13's
+strategic dimension) will fund and shape efficient-inference technology, including quantization, as a
+lever for AI-compute independence. **Export controls** — the geopolitical controls (Section 11) will
+continue to shape where quantization research and deployment happen, potentially accelerating quantization
+in constrained regions (as a way to maximize capability on available hardware). These policy and standards
+forces are harder to predict than the technical trends (⚠️ high uncertainty) but are real influences on
+the roadmap — quantization does not develop in a policy vacuum, and regulation around AI energy, privacy,
+and sovereignty, plus the standards-development process, will shape its trajectory. The most likely
+near-term policy influence is the energy/sustainability pressure (given growing attention to AI's energy
+footprint) and the standards maturation (already underway via OCP and ONNX), both of which point toward
+accelerated adoption of efficient quantization and more standardized tooling.
+
+## The democratization trajectory
+
+A hopeful trend on the roadmap is the continued **democratization** of AI via quantization — the
+trajectory, established by QLoRA and llama.cpp (Sections 05, 12), of making powerful AI accessible on
+modest, widely-available hardware. This will likely continue and deepen: as quantization improves and
+hardware spreads, capable AI models will run on ever-cheaper and more-widely-available devices, extending
+AI access down the price curve (MediaTek's mid-range role, Section 10) and to more of the world. The
+democratization has several dimensions — running large models on consumer hardware (already achieved for
+4-bit), fitting larger models on the same hardware (as sub-4-bit matures), running on cheaper devices
+(mid-range and emerging-market), and enabling on-device personalization and local AI (privacy-preserving
+access). Quantization is central to all of these, and the trajectory is toward broader access — more
+capable AI, on cheaper and more diverse hardware, more privately. This democratization trajectory is
+socially significant: it means the benefits of AI capability are not confined to those with expensive
+hardware or cloud access but extend, via quantization, to a much broader population and range of devices.
+The trend is well-established (the past few years have democratized LLM access dramatically via
+quantization) and will likely continue as quantization and hardware improve, making it one of the more
+confident and socially important forward trends. The democratization angle also connects to the
+sustainability and privacy drivers — on-device quantized AI is more accessible, more private, and
+potentially more energy-efficient — making it a convergence point for several positive trends. As long
+as quantization keeps improving and efficient hardware keeps spreading, the democratization of AI
+capability will continue, with quantization as its enabling technology.
+
+## Quantization within the broader efficiency stack
+
+Looking forward, quantization will increasingly be deployed as part of an integrated **efficiency stack**
+rather than in isolation (Section 03's compression-interaction theme extended forward). The future
+efficient-AI pipeline will combine quantization with sparsity, distillation, efficient architectures
+(including MoE and efficient attention), speculative decoding and other generation optimizations,
+KV-cache management, and efficient hardware — all co-optimized. The trend is toward *holistic* efficiency
+optimization, where quantization is one lever among several, jointly tuned for a target. This matters
+because the biggest efficiency gains come from combining levers (Section 03), and the future tooling
+(automated, hardware-aware) will optimize the whole stack rather than quantization alone. Expect the
+efficiency techniques to be increasingly integrated — a model optimized for deployment will be
+quantized *and* pruned *and* distilled *and* architecturally efficient, with the combination co-designed
+for the target hardware. Quantization remains central (it is the most broadly-applicable and
+highest-leverage lever, especially for the memory-bound LLM case), but it will be deployed within an
+increasingly integrated efficiency stack. This integration is the natural maturation of the field — from
+individual techniques toward holistic efficiency co-design — and it reinforces the co-design theme: the
+future is not just quantization-hardware co-design but *whole-efficiency-stack* co-design, with
+quantization as a central component. For practitioners, this means the future efficiency workflow will
+be more integrated and automated, optimizing the full stack for a target rather than applying
+quantization as an isolated step — a more powerful but also more complex approach that the tooling
+evolution will need to support.
+
 ## Synthesis
 
 The next 3–5 years of quantization will likely see the production bit-width floor continue descending
