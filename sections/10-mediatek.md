@@ -318,6 +318,106 @@ quantized open LLM, precisely because MediaTek leans on Google's mature runtime 
 requiring developers to master a proprietary SDK — a fast-follower turning ecosystem alignment
 into a genuine advantage.
 
+## MediaTek's history: from budget follower to flagship contender
+
+MediaTek's trajectory contextualizes its quantization strategy. For much of its history,
+MediaTek was known as a value-oriented chip supplier — competent, cost-effective silicon for
+mid-range and budget devices, trailing Qualcomm at the high end. The Dimensity line, launched
+around 2020, represented MediaTek's serious push into the flagship tier, and by the Dimensity
+9300/9400/9500 generations it had achieved genuine parity with (and in some benchmarks
+leadership over) Snapdragon on CPU, GPU, and increasingly AI. This history shapes the
+quantization story in two ways. First, MediaTek's fast-follower instinct — track the leader
+closely, match the important capabilities, compete on value and integration — is exactly how it
+approached quantization: INT4 and on-device LLM support arrived promptly after Qualcomm's, not
+years later. Second, MediaTek's deep experience in cost-constrained mid-range silicon gave it
+expertise in efficiency and quantization at the low end, which it carried up into the flagship
+line. The result is a vendor that reached flagship-tier AI capability relatively quickly and
+that brings quantized on-device AI across a uniquely broad price range. The competitive
+implication is that the Android flagship SoC market is now a genuine duopoly on AI capability,
+not a Qualcomm monopoly with a distant follower — MediaTek's quantization stack is close enough
+to Qualcomm's that the choice between them, for on-device AI purposes, is often a wash, decided
+by other SoC factors. This is a significant change from a few years earlier and reflects
+MediaTek's successful investment in closing the AI gap.
+
+## Business context: the volume play and OEM relationships
+
+MediaTek's business model, like Qualcomm's, is selling silicon and tooling to OEMs rather than
+shipping its own devices, and this shapes its quantization approach similarly — it must expose
+NPU capabilities through SDKs (NeuroPilot) and support standard runtimes (LiteRT) so a broad
+ecosystem can target its silicon. But MediaTek's distinctive business characteristic is
+*volume*: it is among the largest smartphone chip vendors by unit shipments, driven heavily by
+mid-range and emerging-market devices. This volume gives MediaTek's quantization support
+enormous reach and makes its precision choices (INT4/INT8) important industry targets — a model
+author wanting to reach the broad Android market, including mid-range and emerging markets, must
+support MediaTek's APUs, just as they must support Snapdragon. MediaTek's OEM relationships span
+a wide range of device makers, and its cost-competitiveness makes it the choice for many
+value-oriented flagships and the dominant mid-range option. For the quantization landscape, this
+means MediaTek is a high-leverage target: supporting its NeuroPilot/LiteRT path and its INT4/INT8
+APU execution reaches a huge, price-diverse installed base. The LiteRT integration amplifies this
+— by making Dimensity a first-class LiteRT target, MediaTek ensures that the quantized models in
+Google's ecosystem run well on its broad device base, aligning its volume advantage with Google's
+platform influence. The business logic reinforces the technical strategy: high volume plus
+ecosystem integration makes MediaTek's quantization support broadly consequential.
+
+## Vision and always-on quantization: the volume workloads
+
+While on-device LLMs get the attention, the highest-*volume* quantized inference on MediaTek
+silicon remains vision, camera, and always-on audio — the workloads that run constantly on every
+phone. MediaTek's APUs (flagship and mid-range) run quantized (typically INT8) models for
+computational photography (noise reduction, HDR, scene detection, portrait effects),
+video processing, on-device speech (voice commands, dictation), and always-on sensing, within
+the tight power budgets these continuous or frequent workloads demand. This large quantized-vision
+substrate, like Apple's, predates the LLM era and represents the bulk of on-device inference by
+volume across MediaTek's device base. NeuroPilot's quantization tooling and the APU's INT8
+execution serve these workloads, and their efficiency (enabled by quantization) is what lets
+mid-range phones offer capable camera and voice features within their power and thermal budgets.
+A complete picture of MediaTek's quantization footprint includes the billions of daily quantized
+vision and audio inferences across its huge device base, not just the newer on-device-LLM
+capability — and it is this mature vision-quantization foundation, built over years of mid-range
+and flagship camera competition, on which MediaTek's on-device-generative-AI capability was
+built. The quantization expertise developed for computational photography transferred directly to
+the LLM era, which is part of why MediaTek closed the generative-AI gap with Qualcomm as quickly
+as it did.
+
+## Quantization challenges and MediaTek-specific considerations
+
+A balanced account notes the challenges MediaTek faces in quantization. Historically, MediaTek's
+proprietary tooling (NeuroPilot) has been less mature and less openly documented than Qualcomm's
+AIMET, and its quantization *research* output is thinner — MediaTek consumes quantization
+techniques more than it originates them, unlike Qualcomm's research-producing arm. This is part
+of why the LiteRT integration is strategically important: it lets MediaTek offer a best-in-class
+quantized-LLM deployment path by leaning on Google's mature tooling rather than closing the
+tooling gap entirely on its own. There is also the general software-lags-silicon challenge for
+newer formats (FP8 on the Dimensity 9500) — the hardware support precedes broad, accuracy-
+validated software use, as everywhere in the industry. And MediaTek's disclosure, while
+reasonable, is thinner than Qualcomm's detailed platform briefs, making precise capability
+assessment harder (hence this section's coarser tables). None of these is disqualifying —
+MediaTek's quantization stack is competitive and improving — but they are the honest gaps
+relative to Qualcomm: less research pedigree, historically less-deep proprietary tooling
+(mitigated by LiteRT), and thinner disclosure. MediaTek's strategic response — ecosystem
+integration over proprietary tooling depth — is a sensible way to compete given these gaps, and
+it may prove more effective than trying to match Qualcomm's research-driven approach head-on.
+
+## The competitive dynamic over time
+
+The MediaTek-Qualcomm competitive dynamic in on-device AI has evolved from Qualcomm-dominance
+toward genuine parity, and the trajectory matters for the landscape. A few years ago, Qualcomm's
+Hexagon plus AIMET was clearly ahead on mobile AI, with MediaTek a capable but trailing
+follower. The Dimensity 9300/9400/9500 generations, the transformer accelerator, the on-device-
+LLM systems features (speculative decoding), and especially the LiteRT integration have closed
+much of the gap for practical on-device-AI purposes. Qualcomm retains leads on the disclosed
+aggressive-format frontier (INT2), research depth, and cross-market breadth (PC, auto, XR), but
+for the core mobile on-device-AI use case — running INT4-quantized LLMs and INT8 vision models
+efficiently — the two are close substitutes. This parity benefits the ecosystem: competition
+drives both vendors to advance their quantization capabilities faster, and model authors and
+tool builders can target both with similar schemes (INT4 weight-only being the common
+denominator). It also means the choice between MediaTek and Qualcomm for a given device is
+increasingly decided by factors other than the quantization stack — price, modem, CPU/GPU, OEM
+relationships — with the AI capability being roughly comparable. For the quantization landscape,
+the healthy duopoly ensures that both of the dominant Android SoC families support the standard
+quantization schemes well, which stabilizes INT4 weight-only as the cross-vendor on-device-LLM
+standard and gives model authors two large, well-tooled targets rather than one.
+
 ## Note on table completeness
 
 MediaTek discloses less generation-by-generation precision detail than Qualcomm, so the APU
