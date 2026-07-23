@@ -352,6 +352,104 @@ for resource-constrained edge deployment, but it is a means to an end (fitting t
 budget), not an end in itself, and when the budget is already met or the risk is
 unjustified, the right amount of quantization is none.
 
+## Case studies: the tradeoff in specific deployments
+
+Concrete deployments make the abstract tradeoff tangible.
+
+**A photo-enhancement feature on a flagship phone.** The model is a vision CNN, compute- and
+energy-bound, run on demand when the user takes a photo. INT8 W8A8 per-channel is the sweet
+spot: ~2× faster and ~45% less energy than FP16, with sub-1% quality loss invisible to
+users. The risk (rare-scene degradation) is validated on a diverse image set. The tradeoff
+is overwhelmingly favorable — this is the "quantization is nearly free" case.
+
+**An on-device assistant on a mid-range phone.** The model is a 3–4B LLM, memory-bound,
+constrained by 6–8 GB RAM. Here quantization is *enabling*, not optimizing: 4-bit weight-only
+is the difference between the assistant existing and not. The tradeoff accepts a small
+reasoning-quality loss (validated on the assistant's actual task distribution) because the
+alternative is no on-device assistant at all. KV-cache quantization is added for conversation
+length. This is the "quantization is mandatory" case.
+
+**A real-time translation earbud.** The model is a streaming speech model, latency- and
+energy-critical, with a tiny power budget. INT8 (with QAT to recover the streaming-state
+accuracy that PTQ loses) is chosen; the risk is accent and rare-word degradation and
+streaming drift, validated on diverse speakers. The energy budget makes quantization
+non-negotiable, but the streaming dynamics demand the extra QAT effort — the "quantization
+needed but requires care" case.
+
+**A safety-critical medical-imaging classifier.** Here the tradeoff is *unfavorable* by
+default: the concentrated accuracy loss on rare (often the most clinically important) cases,
+and the fairness concern across patient groups, mean aggressive quantization is
+inappropriate. If quantized at all, it is conservative (INT8 QAT) with exhaustive
+disaggregated validation, and FP16 is a legitimate choice. This is the "quantize
+cautiously or not at all" case.
+
+These four span the spectrum — nearly-free, mandatory-and-enabling, needed-but-careful, and
+cautious-or-not — and the lesson is that "should I quantize and how aggressively" has no
+universal answer; it is set by the resource constraint's severity and the cost of the
+characteristic failure slice, which is exactly what the use-case table above encodes.
+
+## A cost-benefit decision framework
+
+Pulling the tradeoff into a decision procedure, the questions to answer in order are:
+
+1. **Is a resource constraint binding?** (Memory fit, latency target, energy/thermal
+   budget.) If no, ship FP16 — quantization adds risk for no benefit.
+2. **Which resource, and what is the workload regime?** Memory-bound (→ weight-only) or
+   compute-bound (→ weight+activation), at the intended batch size. This selects the
+   scheme family (Sections 03, 06).
+3. **What is the least-aggressive bit-width that meets the constraint with margin?** Compute
+   the memory/latency/energy at each candidate; pick the mildest that fits. Aggression is a
+   cost, not a goal.
+4. **Does the target execute that scheme natively?** (Section 06.) If not, adjust the scheme
+   to a supported precision/granularity, or reconsider.
+5. **Does it pass validation on the real task, slices, long context, and — where relevant —
+   robustness/safety/fairness?** If not, escalate (finer granularity, protect layers, outlier
+   handling, QAT) per the diagnosis flow.
+6. **Is the lifecycle cost acceptable?** (Re-quantization on updates, multiple variants.) If
+   the maintenance cost dominates, simplify to a single conservative variant.
+
+The framework's spirit is *minimal sufficient quantization*: the mildest scheme that meets
+the constraint, validated on what matters, executed natively, and maintainable. This inverts
+the naive instinct to compress as much as possible, and it is the posture that treats
+quantization as a controlled engineering tradeoff rather than a race to the lowest bit-width.
+
+## Quantization versus alternative compression
+
+Quantization is not the only way to hit a resource budget, and a complete tradeoff analysis
+considers the alternatives and their combination. **A smaller or distilled model** achieves
+the resource win by reducing parameters rather than bits, often with *less* risk than
+quantizing a larger model to the same footprint — a distilled 3B model may beat a 2-bit-
+quantized 7B model at the same memory, because 2-bit quantization is fragile while distillation
+preserves a clean float model. **Pruning/sparsity** (Section 06) reduces parameter count and
+composes with quantization but is less universally hardware-accelerated. **Architectural
+efficiency** (efficient attention, MoE, smaller hidden dimensions) reduces cost structurally.
+The practical guidance: quantization is usually the *first* lever because it is
+low-risk-per-unit-benefit at INT8/4-bit and requires no retraining, but at the aggressive end
+(sub-4-bit) the risk rises to where a smaller/distilled model may be the better path to the
+same footprint. The strongest deployments *combine* levers — a right-sized (possibly distilled)
+architecture, quantized to 4-bit weight-only, with quantized KV cache, and sparsity where the
+hardware accelerates it — spending each lever's low-risk budget rather than pushing any single
+one to its fragile extreme. Seeing quantization as one member of a compression toolkit, rather
+than the only tool, leads to better tradeoff decisions than treating "how low can I quantize"
+as the whole question.
+
+## Measuring the tradeoff: metrics and methodology
+
+Finally, a note on *how* to measure the tradeoff credibly, since the whole section rests on
+measurement. The resource axes should be measured on the *target device* (not estimated from
+bit-counts): actual memory footprint, actual on-device latency (decode and prefill separately
+for LLMs), and actual energy (via device power measurement) — because Section 06's effects
+(fallbacks, native support, bandwidth) make on-device numbers diverge from paper estimates.
+The accuracy axis should be measured with the *deployment-relevant* evaluation: task suites
+not perplexity for LLMs, disaggregated by slice for fairness-sensitive applications,
+including long-context and robustness/safety where they matter, and always as a *delta* from
+the float baseline to isolate the quantization cost. The tradeoff should then be reported as
+the full picture — resource win *and* the disaggregated accuracy cost *and* the residual
+risks — rather than a single "X% smaller, Y% accuracy" headline that hides the concentrated
+failures. This measurement discipline is what turns quantization from a gamble into an
+engineering decision, and it is the methodological backbone that every recommendation in this
+section assumes.
+
 ## The honest bottom line
 
 Quantization's tradeoff is, for the common cases, extraordinarily favorable — INT8 and
