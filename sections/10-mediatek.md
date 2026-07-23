@@ -1,3 +1,338 @@
 # 10. MediaTek Roadmap
 
-> _Section in progress._
+> **Section scope.** MediaTek's quantization and on-device-AI stack: the APU (AI
+> Processing Unit) evolution across the Dimensity flagship line, the NeuroPilot SDK
+> (and its Gen-AI extensions), the notable LiteRT–NeuroPilot integration that makes
+> Dimensity NPUs first-class LiteRT targets, and MediaTek's competitive positioning
+> against Qualcomm. MediaTek is the other half of the Android flagship-SoC duopoly,
+> and its quantization story is one of a strong fast-follower closing the gap with —
+> and in some workloads matching — the market leader.
+
+## MediaTek's position: the scaled fast-follower
+
+MediaTek is, by shipment volume, one of the largest smartphone-chip vendors in the world,
+with the **Dimensity** line competing directly against Qualcomm's Snapdragon at the flagship
+tier and dominating large parts of the mid-range. Its quantization strategy mirrors this
+market position: MediaTek is a **fast-follower** that tracks the precision-format frontier
+closely (INT4 arrived on Dimensity roughly contemporaneously with Snapdragon; on-device LLM
+support followed quickly), pairs competitive silicon with the **NeuroPilot** SDK, and
+differentiates increasingly on *ecosystem integration* — most notably the deep
+**LiteRT (TFLite) integration** that makes Dimensity NPUs first-class targets for Google's
+on-device-LLM stack. Where Qualcomm leads on disclosed precision breadth and original
+research, MediaTek competes on silicon parity, aggressive on-device-LLM enablement, and
+tight integration with the broader Android/Google AI tooling ecosystem. For a large fraction
+of the world's smartphones, MediaTek's APU and NeuroPilot are the quantization substrate.
+
+## The APU evolution across the Dimensity line
+
+MediaTek's neural accelerator is the **APU (AI Processing Unit)**, and it has evolved across
+the Dimensity flagship generations in step with the industry's quantization frontier.
+
+![MediaTek Dimensity APU quantization capability roadmap](../assets/charts/10_mediatek_roadmap.png)
+
+The roadmap tracks the key transitions: the **Dimensity 9000 (2021, APU 590)** established
+the flagship APU with INT8/FP16; the **Dimensity 9200 (2022, APU 690)** improved throughput;
+the **Dimensity 9300 (2023, APU 790)** was the generative-AI inflection, adding **INT4**
+support, a hardware **transformer accelerator**, and mixed-precision execution aimed at
+on-device LLMs; the **Dimensity 9400 (2024, APU 890)** deepened on-device-LLM support
+(including hardware support for techniques like speculative decoding to accelerate
+generation); and the **Dimensity 9500 (2025)** pushed on-device-LLM performance to the
+point of running models like Gemma-3n at high throughput (MediaTek/Google-reported ~1600
+tokens/second prefill and ~28 tokens/second decode at 4K context for a Gemma-3n-E2B-class
+model ⚠️), with FP8 entering the picture. The generation-over-generation story is a steady
+climb up the quantization frontier, closely paralleling Qualcomm's — INT4 for LLM weights,
+mixed precision, transformer-specific acceleration, and on-device generative AI as the
+organizing goal.
+
+| Dimensity flagship | Year | APU | Precision support | Quantization-relevant advance |
+|---|---|---|---|---|
+| Dimensity 9000 | 2021 | APU 590 | INT8, INT16, FP16 | First flagship APU |
+| Dimensity 9200 | 2022 | APU 690 | INT8, INT16, FP16 | Higher AI throughput |
+| Dimensity 9300 | 2023 | APU 790 | **INT4**, INT8, INT16, FP16 | Gen-AI; transformer accelerator; INT4 |
+| Dimensity 9400 | 2024 | APU 890 | INT4, INT8, INT16, FP16 | On-device LLM; speculative decoding support |
+| Dimensity 9500 | 2025 | next-gen APU | INT4, INT8, INT16, FP16, **FP8** | High-throughput on-device LLM; LiteRT integration |
+
+Legend: ⚠️ performance figures are vendor/partner-reported. Precision support from MediaTek
+platform materials.
+
+## NeuroPilot: MediaTek's quantization and deployment SDK
+
+**NeuroPilot** is MediaTek's SDK for deploying AI models to Dimensity (and other MediaTek)
+silicon. It provides model conversion, optimization, and — central to this database —
+**quantization** to INT8 and INT4, reducing model size and power while preserving accuracy
+for mobile constraints. NeuroPilot handles the mapping of a quantized model onto the APU's
+heterogeneous resources and supports standard framework inputs (TensorFlow/TFLite, ONNX,
+PyTorch via conversion). The **NeuroPilot Gen-AI SDK** extends this specifically for
+generative models, adding the LLM-oriented capabilities (efficient KV-cache handling,
+LLM-specific quantization, and generation optimizations) needed for on-device chatbots and
+assistants. NeuroPilot's role is analogous to Qualcomm's AIMET+QNN: it is the path from a
+trained model to an APU-executable quantized engine, exposing the INT4/INT8 quantization the
+APU executes natively. MediaTek's tooling is generally regarded as competent and improving,
+though historically with somewhat less research pedigree and less disclosed depth than
+Qualcomm's AIMET — a gap MediaTek has narrowed by leaning on ecosystem integration (below)
+rather than solely on proprietary tooling.
+
+## The LiteRT–NeuroPilot integration: a strategic differentiator
+
+MediaTek's most distinctive quantization-relevant move is the deep integration between
+**Google's LiteRT** (the runtime formerly known as TensorFlow Lite) and **NeuroPilot**,
+which makes Dimensity NPUs **first-class targets for on-device LLMs through Google's stack**.
+The LiteRT NeuroPilot Accelerator exposes a unified Compiled Model API with both
+ahead-of-time and on-device compilation on supported Dimensity SoCs, and it targets concrete
+open-weight models — Gemma-3 (270M, 1B), Gemma-3n, Qwen3-0.6B, EmbeddingGemma — running them
+through LiteRT and LiteRT-LM on the MediaTek NPU. The reported performance (up to ~12× CPU
+and ~10× GPU throughput for these LLM workloads on a Dimensity 9500-class NPU ⚠️) is
+significant.
+
+This integration matters for several reasons. First, it lowers the barrier to on-device LLM
+deployment on MediaTek silicon dramatically — developers using Google's LiteRT stack (the
+reference mobile-AI runtime) get MediaTek NPU acceleration without wrestling with a
+proprietary SDK, using the *quantized* models the stack ships. Second, it aligns MediaTek
+with Google's on-device-AI direction (Gemma models, LiteRT, the Android AI stack), which is
+strategically valuable given Google's platform influence over Android. Third, it exemplifies
+the quantization-deployment reality of Section 06: the value is in the *end-to-end path* from
+a quantized model through a runtime (LiteRT) to native NPU execution (via NeuroPilot), and
+MediaTek's investment in making that path smooth is a competitive differentiator distinct
+from raw silicon specs. For the on-device-LLM ecosystem, the LiteRT–NeuroPilot integration
+makes Dimensity a well-supported, quantization-friendly target through the most widely-used
+mobile-AI runtime — arguably narrowing Qualcomm's tooling lead more effectively than a
+proprietary alternative could.
+
+```mermaid
+flowchart TD
+    A[Trained model /<br/>open-weight LLM] --> B{Deployment path}
+    B -- MediaTek-native --> C[NeuroPilot / Gen-AI SDK<br/>INT8/INT4 quantization]
+    B -- Google stack --> D[LiteRT + LiteRT-LM<br/>quantized Gemma/Qwen]
+    D --> E[LiteRT NeuroPilot Accelerator<br/>AOT + on-device compile]
+    C --> F[APU execution<br/>INT4/INT8 · transformer accel]
+    E --> F
+    F --> G[Heterogeneous: APU + Mali GPU + CPU]
+    G --> H[On-device inference<br/>LLM / vision / speech]
+```
+
+## On-device generative AI: MediaTek's demonstrations
+
+Like Qualcomm, MediaTek has demonstrated on-device generative AI as proof of its stack. The
+Dimensity 9300 and 9400 generations showcased on-device LLMs (including Llama-class and
+Google Gemma models) running via INT4 quantization on the APU, and the Dimensity 9400
+introduced hardware support for **speculative decoding** — a generation-acceleration technique
+(Section 05) that MediaTek brought into the NPU's capabilities, showing attention to the
+systems-level optimizations around quantized inference, not just the quantization itself. The
+Dimensity 9500 generation's LiteRT-based Gemma-3n throughput figures (high prefill and decode
+rates ⚠️) position MediaTek as competitive with Qualcomm on on-device-LLM performance. These
+demonstrations, like Qualcomm's, are vendor/partner-produced with vendor-measured performance
+(⚠️), but they establish that MediaTek's APU plus INT4 quantization runs the generative
+workloads defining current edge AI, and that MediaTek is investing in the surrounding systems
+techniques (speculative decoding, efficient KV cache) that make quantized on-device LLMs
+practical.
+
+## MediaTek versus Qualcomm: the flagship duopoly
+
+The direct comparison with Qualcomm (Section 09) frames MediaTek's position.
+
+![Disclosed precision support: MediaTek vs. Qualcomm 2025 flagships](../assets/charts/10_mediatek_vs_qualcomm.png)
+
+On disclosed precision support, MediaTek's 2025 flagship matches Qualcomm on INT4/INT8/INT16/
+FP16 and is adding FP8, but Qualcomm's 8 Elite Gen 5 leads on the aggressive frontier with
+disclosed **INT2** and native FP8 — the one clear precision-breadth gap. On tooling, Qualcomm's
+AIMET has more research pedigree, but MediaTek's LiteRT integration arguably offers a smoother
+path for the large population of developers using Google's stack. The fuller comparison:
+
+| Dimension | MediaTek | Qualcomm |
+|---|---|---|
+| NPU | APU (transformer accelerator) | Hexagon (DSP-derived) |
+| Disclosed precision frontier | INT4–FP16 + emerging FP8 | INT2–FP16 + FP8 (broader) |
+| Native SDK | NeuroPilot / Gen-AI SDK | AIMET + AI Engine Direct (QNN) |
+| Ecosystem integration | Deep LiteRT–NeuroPilot (Google stack) | ONNX RT / LiteRT delegates + AI Hub |
+| Quantization research | Growing, less published | Top-tier (DFQ, AdaRound) |
+| On-device LLM systems | Speculative decoding, KV cache | Micro-tile, Direct Link |
+| Market | Flagship + strong mid-range volume | Flagship + PC/auto/XR breadth |
+
+The picture is of a close duopoly: MediaTek matches Qualcomm on the production-relevant
+formats (INT4/INT8) and on-device-LLM capability, trails on the disclosed aggressive frontier
+(INT2) and research depth, and leads (or at least differentiates) on Google-stack integration.
+For most on-device-AI use cases — which are well-served by INT4 weight-only quantization —
+MediaTek and Qualcomm are close substitutes, and the choice often comes down to the broader SoC
+(CPU, modem, price) rather than the quantization stack specifically. MediaTek's strategy of
+riding the LiteRT ecosystem rather than only competing on proprietary tooling is a smart
+fast-follower play that leverages Google's platform influence.
+
+## Strengths, gaps, and outlook
+
+**Strengths.** Silicon parity with Qualcomm on production-relevant precisions (INT4/INT8),
+a hardware transformer accelerator and on-device-LLM systems features (speculative decoding,
+efficient KV cache), the competent NeuroPilot/Gen-AI SDK, and — the standout — the deep LiteRT
+integration that makes Dimensity a first-class, quantization-friendly target through Google's
+widely-used runtime. Huge shipment volume means MediaTek's quantization support reaches an
+enormous installed base, especially in the mid-range where much of the world's smartphone
+volume sits.
+
+**Gaps.** Trails Qualcomm on the disclosed aggressive-format frontier (no disclosed INT2), has
+less original quantization research pedigree, and historically less-deep proprietary tooling
+(mitigated by the LiteRT strategy). Vendor performance claims are, as always, unverified (⚠️).
+
+**Outlook (partly speculative ⚠️).** Expect MediaTek to continue tracking the precision
+frontier closely (likely FP8 maturation and eventual sub-4-bit/MX-format support), to deepen
+the LiteRT/Google-stack integration as a differentiator, and to keep investing in on-device-LLM
+systems optimization. Its fast-follower position on silicon plus its ecosystem-integration
+strategy is well-suited to the market: for the large volume of Android devices where INT4
+weight-only on-device LLMs are the goal, MediaTek is a strong, well-tooled option, and the
+LiteRT integration may prove a durable advantage as Google's on-device-AI stack grows.
+
+## Inside the APU: architecture and the transformer accelerator
+
+MediaTek's APU is a heterogeneous neural accelerator that, like Qualcomm's Hexagon, combines
+different processing units for the mixed operation types of real models, and its evolution
+reflects the shift from convolutional vision to transformer generative AI. The Dimensity 9300's
+APU 790 introduced a dedicated **hardware transformer accelerator** — a recognition that the
+attention and feed-forward operations of transformers benefit from specialized hardware
+distinct from the convolution-optimized units that served vision. This transformer accelerator,
+combined with INT4 weight quantization and mixed-precision execution, is what makes on-device
+LLMs practical on Dimensity. The APU is designed for energy-efficient sustained inference (the
+edge constraint of Section 06), and MediaTek's generation-over-generation improvements have
+focused increasingly on the memory-bandwidth and generation-throughput characteristics that
+matter for LLM decode — the memory-bound regime of the roofline. The APU also handles the
+always-on and vision/camera workloads that dominate a phone's neural inference volume, quantized
+to INT8, running continuously within tight power budgets. Architecturally, the APU's story
+parallels the Hexagon's: an accelerator that grew transformer-specific capabilities and
+low-bit precision support as the workload shifted to generative AI, co-designed with the
+quantization schemes (INT4 weight-only, mixed precision) that the new workloads require. The
+transformer accelerator in particular is MediaTek's answer to the same problem Qualcomm solved
+with micro-tile inferencing — how to execute the memory-bound, irregular matmuls of generative
+transformers efficiently — and its presence signals MediaTek's serious investment in on-device
+generative AI rather than treating it as a checkbox.
+
+## NeuroPilot's quantization workflow in depth
+
+NeuroPilot's practical workflow follows the familiar arc: import a trained model (from TFLite,
+ONNX, or via conversion from PyTorch), apply quantization (INT8 or INT4, with calibration for
+accuracy), configure the mapping to the APU's resources, and compile to an APU-executable form.
+The **NeuroPilot Gen-AI SDK** adds LLM-specific steps: handling the KV cache efficiently,
+applying LLM-appropriate weight quantization (INT4 weight-only per-group, the on-device-LLM
+standard of Section 05), and integrating generation optimizations. NeuroPilot supports the
+post-training quantization that suffices for most INT8/INT4 deployments and provides paths for
+accuracy recovery where needed. Compared to Qualcomm's AIMET, NeuroPilot has historically been
+somewhat more of a deployment tool than a research-grade quantization toolkit — it does the job
+of producing an APU-ready quantized model competently, but has not been the source of novel
+quantization *methods* the way AIMET (via Qualcomm AI Research's DFQ and AdaRound) has. MediaTek
+has compensated for this by embracing the LiteRT integration, effectively outsourcing part of
+the quantization-tooling story to Google's mature stack while providing the NPU-native execution
+layer. For developers, this means two viable paths: NeuroPilot-native for maximum MediaTek-
+specific control, or LiteRT (with the NeuroPilot accelerator) for a smoother, more portable,
+Google-ecosystem-aligned experience with quantized models. The dual-path availability is a
+strength — it meets developers where they are — and the LiteRT path in particular lowers the
+barrier for the many developers already using Google's mobile-AI tooling.
+
+## The mid-range story: democratizing on-device quantization
+
+A distinctive aspect of MediaTek's role that Qualcomm shares less is its **enormous mid-range
+volume**. Beyond the flagship Dimensity 9000-series, MediaTek ships the Dimensity 8000-series,
+7000-series, and lower tiers, plus the Helio line, into a vast number of mid-range and
+budget devices — a large fraction of the world's smartphones, especially in emerging markets.
+These chips also include APUs (of varying capability) that support INT8 and, increasingly, INT4
+quantization. The significance for the quantization landscape is **democratization**: on-device
+AI, enabled by quantization, is not confined to expensive flagships but reaches the mass-market
+mid-range through MediaTek's volume, meaning quantized on-device inference (vision, speech, and
+increasingly small LLMs) is available to billions of users on affordable devices. This matters
+for the reach of on-device AI — the memory and power constraints are tighter on mid-range
+silicon, making quantization even more essential (a mid-range chip with 6-8 GB RAM absolutely
+requires 4-bit to run a capable LLM), and MediaTek's mid-range APUs are what bring quantized
+on-device AI to the price tiers where most of the world's phones sell. While the flagship
+Dimensity vs. Snapdragon competition gets the attention, MediaTek's mid-range quantization
+support arguably has broader real-world impact by volume, extending on-device AI down the price
+curve. This democratization role is a genuine and underappreciated part of MediaTek's
+contribution to the practical quantization landscape.
+
+## Speculative decoding and systems-level quantization support
+
+The Dimensity 9400's introduction of hardware support for **speculative decoding** deserves
+emphasis because it illustrates MediaTek's attention to the *systems* around quantized
+inference, not just the quantization itself. Speculative decoding (Section 05) accelerates LLM
+generation by using a small, fast "draft" model to propose several tokens that the large model
+then verifies in parallel — turning some of the memory-bound sequential decode into more
+parallel, higher-throughput work. Both the draft and target models can be quantized (INT4),
+and the technique composes with quantization to further speed on-device generation. MediaTek
+bringing speculative decoding into the APU's supported capabilities shows recognition that
+on-device LLM performance depends on the *combination* of quantization and generation-systems
+techniques — the interaction Section 05 discussed. Alongside efficient KV-cache handling (also
+quantizable) and the transformer accelerator, speculative-decoding support positions the
+Dimensity APU for the full on-device-LLM optimization stack, not just weight quantization. This
+systems-level attention is part of how MediaTek competes with Qualcomm's micro-tile inferencing
+and Direct Link — both vendors are optimizing not just the quantized matmul but the whole
+generation pipeline, recognizing that quantization is necessary but not sufficient for fast
+on-device generation.
+
+## Case study: an on-device Gemma model via LiteRT on Dimensity
+
+The Dimensity 9500 + LiteRT running Gemma-3n is a concrete case worth tracing. Google's Gemma
+models are distributed in LiteRT-compatible quantized form (INT4/INT8 weight quantization). A
+developer using LiteRT-LM targets the model at a Dimensity NPU via the LiteRT NeuroPilot
+Accelerator, which compiles the quantized model (ahead-of-time or on-device) for the APU. On
+the Dimensity 9500-class NPU, the quantized Gemma-3n-E2B model reportedly reaches ~1600
+tokens/second prefill and ~28 tokens/second decode at 4K context (⚠️ partner-reported) — with
+the prefill (compute-bound) benefiting from the APU's transformer acceleration and the decode
+(memory-bound) benefiting from the INT4 weights' reduced memory traffic. The reported ~10-12×
+speedup over CPU/GPU for these LLM workloads reflects the APU's native quantized execution
+versus the general-purpose processors. The case exemplifies the LiteRT–NeuroPilot value: a
+developer gets NPU-accelerated on-device LLM inference of a quantized open model through
+Google's standard runtime, without proprietary-SDK friction. It also illustrates the
+now-standard on-device-LLM recipe (INT4 weight quantization, quantized KV cache, NPU execution)
+working on MediaTek silicon through the Google ecosystem — the end-to-end path that makes
+quantized on-device LLMs practical, delivered via ecosystem integration rather than a walled
+proprietary stack.
+
+## Beyond phones: Genio, Pentonic, and automotive
+
+MediaTek's quantization reach extends beyond smartphones into IoT, smart displays, TVs, and
+automotive, broadening the footprint of its APU and NeuroPilot quantization stack. The
+**Genio** platform targets IoT and edge devices (smart home, industrial, retail) with
+APU-equipped SoCs running quantized vision and audio models within tight power and cost budgets
+— the tinyML-to-midrange edge regime where quantization is essential. The **Pentonic** line
+powers smart TVs with on-device AI for image processing and increasingly assistant features,
+quantized for the TV SoC's constraints. MediaTek also has **automotive** offerings (including
+work with NVIDIA on automotive AI) where on-device quantized inference serves in-cabin and
+perception workloads under the safety and power constraints Section 07 flagged. Across these
+markets, NeuroPilot provides the common quantization and deployment tooling, and the APU
+provides INT8/INT4 native execution, extending MediaTek's mobile-derived quantization expertise
+into the broader edge. Like Qualcomm's cross-market AI Stack, MediaTek's multi-market presence
+means its quantization support reaches well beyond phones, and its precision choices (INT4/INT8)
+propagate across device categories. The breadth reinforces MediaTek's role as a high-volume
+provider of quantized on-device AI across the consumer-edge landscape, from budget phones to TVs
+to IoT.
+
+## Developer experience and the Google-ecosystem bet
+
+MediaTek's developer experience reflects its strategic bet on ecosystem integration. A
+developer can use NeuroPilot directly for MediaTek-specific optimization, but the increasingly
+prominent path is through **LiteRT** — using Google's runtime and quantized models (Gemma and
+others) with MediaTek NPU acceleration handled transparently by the LiteRT NeuroPilot
+Accelerator. This is a deliberate strategic choice: rather than trying to out-tool Qualcomm's
+AIMET/QNN with a competing proprietary stack, MediaTek aligns with Google's mobile-AI ecosystem,
+which most Android developers already use, and provides best-in-class NPU acceleration through
+it. For developers, this lowers friction substantially — quantized on-device LLM inference on
+MediaTek silicon through familiar Google tooling — and it leverages Google's platform influence
+over Android to MediaTek's benefit. The bet's risk is dependence on Google's roadmap and
+priorities, but the alignment is strategically sound given Google's centrality to Android AI. The
+net developer experience is arguably *simpler* than Qualcomm's for the common case of deploying a
+quantized open LLM, precisely because MediaTek leans on Google's mature runtime rather than
+requiring developers to master a proprietary SDK — a fast-follower turning ecosystem alignment
+into a genuine advantage.
+
+## Note on table completeness
+
+MediaTek discloses less generation-by-generation precision detail than Qualcomm, so the APU
+table above is somewhat coarser than the Qualcomm equivalent, and some entries (exact APU
+model numbers, precise per-generation format additions) are inferred from platform materials
+and partner reports rather than detailed datasheets. Where MediaTek's disclosures are thinner,
+this section says so rather than overstating precision — consistent with the database's
+confidence discipline.
+
+## Master database contributions
+
+This section contributes: MediaTek (chipmaker, APU), NeuroPilot / Gen-AI SDK (framework), and
+the LiteRT–NeuroPilot integration (noted under LiteRT in Section 11's Google discussion and the
+master table) — see Section 16.
+
+---
+
+*Next: [11 — Other Major Players](./11-other-players.md).*

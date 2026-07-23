@@ -24,3 +24,5 @@ AIMET,framework,ptq-tool,DFQ + AdaRound PTQ + QAT + mixed precision,INT4;INT8;IN
 AI Engine Direct (QNN),framework,compiler,NPU compile + deploy,INT2;INT4;INT8;FP8;FP16,production-shipped,Low-level Hexagon deployment SDK,QNN SDK,sdk-docs,09;16
 Qualcomm AI Hub,framework,inference-runtime,auto-optimize + compile for Snapdragon,INT4;INT8,production-shipped,Accessible model optimization service,AI Hub,sdk-docs,09;16
 Qualcomm AI Research,research-lab,academic,PTQ technique invention,INT4;INT8;low-bit,production-shipped,Invented DFQ and AdaRound,DFQ/AdaRound papers,paper,09;12;16
+MediaTek,chipmaker,mobile-soc,APU + transformer accelerator,INT4;INT8;INT16;FP16;FP8,production-shipped,Silicon parity + deep LiteRT integration,Dimensity 9500 APU,official-spec,10;16
+NeuroPilot,framework,ptq-tool,INT8/INT4 quant + Gen-AI SDK,INT4;INT8,production-shipped,APU deployment + LLM optimization,NeuroPilot Gen-AI SDK,sdk-docs,10;16

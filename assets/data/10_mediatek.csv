@@ -1,0 +1,6 @@
+year,chip,apu,precisions,note
+2021,Dimensity 9000,APU 590,INT8;INT16;FP16,First flagship APU
+2022,Dimensity 9200,APU 690,INT8;INT16;FP16,Improved AI throughput
+2023,Dimensity 9300,APU 790,INT4;INT8;INT16;FP16,Gen-AI; transformer accel; INT4
+2024,Dimensity 9400,APU 890,INT4;INT8;INT16;FP16,On-device LLM; speculative decode
+2025,Dimensity 9500,APU next,INT4;INT8;INT16;FP16;FP8,LiteRT-NeuroPilot; ~1600 tok/s prefill
