@@ -23,6 +23,17 @@ research, MediaTek competes on silicon parity, aggressive on-device-LLM enableme
 tight integration with the broader Android/Google AI tooling ecosystem. For a large fraction
 of the world's smartphones, MediaTek's APU and NeuroPilot are the quantization substrate.
 
+It is worth stating the stakes plainly: because MediaTek and Qualcomm together account for the
+overwhelming majority of Android smartphone SoCs, and because Apple covers iOS, these three
+vendors' quantization decisions effectively define what on-device AI is possible on the phones in
+billions of pockets. MediaTek's role in that trio is to bring competitive on-device-AI capability
+to the broadest price range — from premium flagships down through the mid-range that Qualcomm and
+Apple do not fully serve — which makes MediaTek's quantization support disproportionately
+important for the global reach of on-device AI, particularly outside the wealthiest markets. A
+reader focused only on the flagship-tier Qualcomm-vs-Apple contest would miss that much of the
+world's first (and only) experience of on-device AI runs on MediaTek silicon, quantized through
+NeuroPilot and, increasingly, LiteRT.
+
 ## The APU evolution across the Dimensity line
 
 MediaTek's neural accelerator is the **APU (AI Processing Unit)**, and it has evolved across
