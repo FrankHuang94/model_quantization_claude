@@ -26,6 +26,17 @@ speculative — whether 2-bit becomes a *general* production floor by 2030 depen
 more confident claim is directional: the floor will keep descending, just as it has, with the pace set
 by hardware and tooling rather than algorithms alone.
 
+A methodological note frames the whole section. Forecasting a field that moved from "INT8 is hard" to
+"2-bit is demonstrated and FP4 hardware ships" in roughly three years (Section 02) is inherently
+hazardous, and the past decade's biggest developments — the speed of the LLM-quantization wave, the
+revival of ternary via BitNet, the microscaling-format standardization — were not widely predicted in
+advance. This section therefore emphasizes *directions and forces* over dated predictions, grades its
+confidence explicitly, and gives scenario ranges rather than point estimates where the uncertainty is
+genuine. The aim is to be useful for planning — telling the reader what is safe to build on, what to
+watch, and what could surprise — rather than to make confident calls a fast-moving field will likely
+falsify. Read the specifics as informed possibilities and the overall trajectory as the well-supported
+through-line.
+
 ![Anticipated adoption timeline of emerging quantization technologies](../assets/charts/14_adoption_timeline.png)
 
 The adoption-timeline chart lays out anticipated production-adoption windows for the emerging
