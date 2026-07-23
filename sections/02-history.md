@@ -469,6 +469,56 @@ taxonomy. "Adoption" here means production reality, not citation count.
 | 2024 | MXFP microscaling | Block FP formats (FP8/6/4) as HW numerics | 🟡→🟢 hardware arriving |
 | 2025 | FP4 training (Blackwell) | Native FP4 tensor cores + FP4 training | 🟡 data center; edge emerging |
 
+## Case studies: how landmark models actually got quantized
+
+Abstract technique histories can obscure the concrete engineering reality. Four
+model-quantization stories illustrate how the eras played out in practice.
+
+**MobileNet on phones (2018).** MobileNet was designed for mobile inference, and
+its INT8 quantization exposed an important subtlety: depthwise-separable
+convolutions have very different weight distributions across channels, so
+per-tensor INT8 quantization degraded accuracy noticeably (several top-1 points),
+while **per-channel** weight quantization recovered nearly all of it. MobileNet was
+one of the models that made per-channel quantization a non-negotiable default, and
+it also motivated **quantization-aware training** in TFLite because the residual
+PTQ gap on the most efficient architectures was real. The lesson — that the most
+compute-efficient architectures are often the *hardest* to quantize, because they
+have less redundancy to spare — recurs constantly.
+
+**BERT and the transformer activation problem (2019–2021).** Quantizing BERT to
+INT8 was straightforward for weights but revealed the activation-outlier issue
+before LLMs made it famous: certain layers, particularly around the attention
+softmax and the residual stream, had activation ranges that resisted uniform
+quantization. Integer-only BERT (I-BERT) had to design integer approximations for
+GELU, softmax, and layer normalization — operations CNNs did not stress. BERT
+quantization was the dress rehearsal for the LLM era's outlier battles.
+
+**Llama and the 4-bit local-model explosion (2023).** When Meta's Llama weights
+became available in early 2023, the community quantized them to 4 bits within days
+using GPTQ and llama.cpp, and the result — a capable 7B–13B model running on a
+laptop or even a phone — is arguably what made "local LLMs" a mass phenomenon. The
+Llama models became the de-facto benchmark on which every new quantization method
+was validated, and the practical experience of quantizing them (which layers
+tolerate 4 bits, how much a group size of 128 helps, when to keep the embedding and
+final projection in higher precision) codified the folk wisdom of the field. The
+`TheBloke` repositories on Hugging Face, which published GPTQ/GGUF quantizations of
+essentially every open model in 2023, were a distribution phenomenon that
+accelerated adoption enormously.
+
+**Whisper and on-device speech (2023–2024).** OpenAI's Whisper speech-recognition
+models were quantized (INT8 and 4-bit) for on-device transcription, a case where
+the encoder–decoder architecture and the streaming latency requirement created
+different constraints than either vision or text generation. Whisper quantization,
+shipped in llama.cpp's sibling `whisper.cpp` and in mobile apps, is a reminder that
+"edge quantization" spans speech and multimodal workloads with their own failure
+modes (Section 07), not just the vision and LLM cases that dominate the literature.
+
+These stories share a moral: the technique history is necessary but not sufficient;
+each real deployment surfaced architecture-specific quirks (depthwise convolutions,
+softmax outliers, embedding sensitivity, streaming latency) that the general
+methods had to accommodate. The generalized methods won, but only after being
+hardened against the specific models people actually shipped.
+
 ## The parallel hardware timeline
 
 Quantization algorithms did not develop in a vacuum; they co-evolved with the
