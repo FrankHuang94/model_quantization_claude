@@ -568,7 +568,8 @@ AI Engine Direct/QNN (framework/compiler), Qualcomm AI Hub (framework), and Qual
 the academic-landscape section (12), reflecting its unusual dual role as both an industrial
 silicon vendor's research arm and a primary source of foundational quantization technique — a
 duality that itself illustrates the blurring of the industry-academia boundary that Section 12
-develops as a theme.
+develops as a theme, and one of the clearest signals that the most consequential quantization
+work now happens where industrial silicon expertise and academic research method meet.
 
 ---
 
