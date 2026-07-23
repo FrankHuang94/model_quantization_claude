@@ -1,0 +1,16 @@
+startup,category,funding_musd,stage,focus
+Multiverse Computing,compression-sw,215,growth,quantum-inspired LLM compression
+d-Matrix,inference-chip,400,growth,digital in-memory compute
+EnCharge AI,inference-chip,144,series-b,analog in-memory compute
+Hailo,edge-chip,340,series-c,edge AI accelerator
+SiMa.ai,edge-chip,270,series-b,edge MLSoC
+Neural Magic,compression-sw,50,acquired,sparsity+quantization (Red Hat)
+Deci AI,compression-sw,55,acquired,model optimization (NVIDIA)
+Axelera AI,inference-chip,120,series-b,in-memory edge accelerator
+Kneron,edge-chip,190,series-b,edge AI chips
+Rain AI,inference-chip,25,series-a,analog compute-in-memory
+Pruna AI,compression-sw,6.5,seed,model optimization framework
+Nota AI,compression-sw,40,growth,edge model compression
+Deeplite,compression-sw,12,seed,quantization tooling
+Latent AI,compression-sw,20,series-a,edge MLOps + quantization
+Femtosense,edge-chip,10,seed,sparsity tiny NPU

@@ -45,3 +45,18 @@ Cornell (De Sa),research-lab,academic,extreme low-bit theory,W2;W3,sdk-limited,I
 Meta FAIR,research-lab,academic,rotation + edge deploy,W4A4,sdk-limited,SpinQuant learned rotations,SpinQuant / ExecuTorch,paper,12;16
 Google Research/DeepMind,research-lab,academic,foundational INT8 + tooling,INT8,production-shipped,Integer-arithmetic INT8 scheme,Jacob et al INT8 / LiteRT,paper,12;16
 ETH Zurich (Hoefler),research-lab,academic,compression systems,W4,production-shipped,GPTQ co-author + HPC systems,GPTQ (co),paper,12;16
+Multiverse Computing,startup,compression-sw,tensor-network LLM compression,low-bit,sdk-limited,Quantum-inspired compression CompactifAI,CompactifAI + $215M raise,press,13;16
+d-Matrix,startup,inference-chip,digital in-memory compute,low-bit,sdk-limited,DIMC for LLM inference; unicorn,Corsair,press,13;16
+EnCharge AI,startup,inference-chip,analog in-memory compute,low-bit analog,research-only,Analog CIM energy efficiency,$144M Series B,press,13;16
+Hailo,startup,edge-chip,INT8/INT4 edge accelerator,INT4;INT8,production-shipped,Dedicated edge AI processor,Hailo-8/10,press,13;16
+SiMa.ai,startup,edge-chip,edge MLSoC,INT8,production-shipped,Power-efficient embedded ML,MLSoC,press,13;16
+Kneron,startup,edge-chip,edge AI chips,INT4;INT8,production-shipped,Reconfigurable edge NPU,KL-series,press,13;16
+Axelera AI,startup,inference-chip,in-memory edge accelerator,INT8,sdk-limited,European CIM edge,Metis,press,13;16
+Neural Magic,startup,compression-sw,sparsity + quantization,INT8;W4;sparse,production-shipped,CPU/GPU sparse-quant (Red Hat),DeepSparse/nm-vllm,press,13;16
+Deci AI,startup,compression-sw,NAS + quant + compile,INT8;W4,production-shipped,AutoNAC optimization (NVIDIA),AutoNAC,press,13;16
+Nota AI,startup,compression-sw,edge model compression,INT8;INT4,production-shipped,Automotive/device compression,NetsPresso,press,13;16
+Rain AI,startup,inference-chip,analog compute-in-memory,low-bit analog,research-only,Brain-inspired analog,analog CIM,press,13;16
+Latent AI,startup,compression-sw,edge MLOps + quant,INT8;INT4,production-shipped,Defense/enterprise edge,LEIP,press,13;16
+Deeplite,startup,compression-sw,very-low-bit quantization,sub-4-bit,sdk-limited,Extreme edge compression,Deeplite Neutrino,press,13;16
+Femtosense,startup,edge-chip,sparsity tiny NPU,INT8;sparse,sdk-limited,Ultra-low-power always-on,SPU,press,13;16
+Pruna AI,startup,compression-sw,cache+prune+quant+distill,INT8;W4,sdk-limited,Open-source comprehensive optimization,Pruna OSS,press,13;16
