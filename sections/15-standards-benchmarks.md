@@ -414,6 +414,24 @@ important direction for the field's maturation (Section 14), and the format-stan
 (OCP MX) is a hopeful sign that quantization is moving from a fragmented frontier toward a more
 standardized infrastructure.
 
+The practical guidance that follows from this section is concrete. When assessing a quantized-inference
+claim, prefer, in descending order of trust: MLPerf results (accuracy-constrained, peer-reviewed, where
+they exist); published peer-reviewed benchmarks with documented configurations; open, reproducible
+evaluations via lm-eval-harness or equivalent on named models; and — last and least — vendor TOPS and
+throughput claims, which should be treated as marketing until independently corroborated. When producing
+a quantized model, document the configuration (method, group size, calibration, protected layers) and
+report accuracy as a delta from the float baseline on deployment-relevant tasks, so the result is
+reproducible and comparable. And when comparing hardware, look past TOPS to memory bandwidth, native
+precision support, and accuracy-constrained achieved throughput on the actual workload. This guidance —
+trust the accuracy-constrained standardized benchmarks, discount the vendor scalars, document and measure
+rigorously — is the operational form of the confidence discipline the whole database embodies, and it is
+the single most useful takeaway from the standards-and-benchmarks landscape: in a field where the
+benchmarks lag the methods and vendor claims fill the vacuum, disciplined, skeptical, target-specific
+measurement is the only reliable path to knowing whether a quantized model or a piece of silicon is
+actually good. The standards and benchmarks are improving, but until they fully mature, that discipline
+is indispensable — and it will remain valuable even after, because no benchmark ever fully substitutes
+for measuring the actual deployment on the actual target.
+
 ## Master database contributions
 
 This section contributes standard/benchmark entities to the master database (Section 16): MLPerf /
