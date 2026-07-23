@@ -1,0 +1,11 @@
+player,silicon_score,tooling_score
+Qualcomm,9.5,8.0
+Apple,8.5,7.5
+MediaTek,8.0,5.5
+Samsung,7.0,5.0
+Google (Tensor/Edge TPU),6.5,8.5
+NVIDIA (Jetson),9.0,9.5
+Intel,7.0,8.8
+AMD,6.5,6.0
+ARM (Ethos IP),7.5,6.5
+Huawei,8.0,6.0
