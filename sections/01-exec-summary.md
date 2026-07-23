@@ -211,6 +211,53 @@ Three consolidations define the current moment:
    quantization-native training — all blur the line between "algorithm" and
    "hardware format."
 
+## Why quantization became unavoidable at the edge
+
+The economic and physical drivers behind quantization's rise are worth stating
+plainly, because they explain why the field has momentum rather than being a
+passing optimization fad. Four forces compound:
+
+- **The memory wall.** DRAM bandwidth and capacity have improved far more slowly
+  than arithmetic throughput. On a modern mobile SoC, moving a byte from DRAM
+  costs one to two orders of magnitude more energy than a multiply-accumulate.
+  Quantization is, first and foremost, a *data-movement* optimization: fewer bits
+  per weight means fewer bytes crossing the memory bus, which is the dominant cost
+  for both energy and latency in memory-bound workloads like LLM decoding.
+- **Model growth outpacing device memory.** On-device model sizes have grown from
+  tens of megabytes (early mobile vision) to multi-billion-parameter LLMs. A 7-
+  to 8-billion-parameter model in FP16 needs ~14–16 GB just for weights — more
+  than the total RAM of most phones. At 4 bits it fits in ~4 GB, which is the
+  difference between "runs on a flagship phone" and "does not run at all." This
+  single fact is why 4-bit weight quantization is not optional for on-device LLMs.
+- **Thermal and battery envelopes.** Edge devices are power- and thermally
+  constrained in ways servers are not. Lower-precision arithmetic dissipates less
+  energy per operation and per byte moved, directly extending the duration a
+  device can sustain inference before throttling. Section 07 quantifies the
+  energy-efficiency gains by precision level.
+- **Dedicated NPU silicon.** Every major SoC vendor now ships a dedicated neural
+  accelerator whose peak throughput is quoted at INT8 or lower. That hardware is
+  *designed around* quantized execution; running FP32 on it is either impossible
+  or wasteful. The silicon has, in effect, voted for quantization.
+
+## Reading the confidence and maturity flags
+
+Because this is a reference intended to be *used* — for procurement decisions,
+research orientation, and engineering planning — the distinction between what is
+shipping and what is merely announced is load-bearing. Two independent axes are
+tracked on every substantive claim:
+
+| Axis | Values | What it answers |
+|---|---|---|
+| **Maturity** | 🟢 production-shipped / 🟡 sdk-limited / 🔴 research-only | *Can I deploy this today at scale?* |
+| **Confidence** | official-spec / sdk-docs / paper / press / inferred / speculative | *How solid is the evidence for the claim?* |
+
+These are orthogonal. A technique can be research-only but backed by a strong peer-
+reviewed paper (high confidence, low maturity — e.g. QuIP#), while a hardware
+format can be production-shipped but supported only by a vendor press claim with
+no independent benchmark (high maturity, medium confidence — e.g. many first-
+generation FP4 mobile claims). Conflating the two is the single most common error
+in vendor-comparison writing, and this database keeps them separate throughout.
+
 ## How the rest of this database is organized
 
 Sections 02–07 build the technical foundation: history (02), core techniques and
