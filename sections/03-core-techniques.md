@@ -803,9 +803,17 @@ QAT — plus the two cross-cutting concerns of calibration (choosing ranges) and
 outlier handling (surviving the values that break naive schemes). Every named method
 in Section 05 is a specific, cleverly-engineered point in this design space, and
 every hardware capability in Sections 06 and 08–11 either enables or forecloses
-particular combinations. The next section drills into the *representations*
-themselves — the integer and floating-point numeric formats that these techniques
-target.
+particular combinations. If there is a single unifying thread, it is that
+quantization is fundamentally about *allocating a scarce precision budget where the
+network's function is most sensitive to it* — the calibration method decides how to
+spend bits within a tensor's range, the granularity decides how finely the budget is
+subdivided, the mixed-precision allocation decides how it is distributed across
+layers, and the outlier handling ensures that a handful of extreme values do not
+bankrupt the whole budget. Master those four decisions and the rest of the field —
+the named methods, the hardware formats, the vendor toolchains — reads as engineering
+variations on a small set of principles rather than an unstructured zoo of tricks.
+The next section drills into the *representations* themselves — the integer and
+floating-point numeric formats that these techniques target.
 
 ---
 
