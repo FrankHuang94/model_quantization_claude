@@ -39,6 +39,40 @@ debate about whether uniform or relative resolution better fits a given tensor's
 distribution, traded against hardware cost. There is no universal winner, which is
 why modern silicon increasingly supports *both* and lets the compiler choose.
 
+## The numeric-format taxonomy
+
+The formats covered in this section organize into a taxonomy, diagrammed below: the two families
+(integer and floating point), the non-uniform and block-floating-point types that bridge them, and the
+representative formats within each.
+
+```mermaid
+flowchart TD
+    ROOT[Numeric formats for quantization] --> INT[Integer / fixed-point<br/>uniform resolution]
+    ROOT --> FP[Floating point<br/>relative resolution]
+    ROOT --> NU[Non-uniform<br/>distribution-matched]
+    ROOT --> BFP[Block floating point<br/>shared scale per block]
+    INT --> I1[INT16 / INT8]
+    INT --> I2[INT4 per-group]
+    INT --> I3[INT2 / ternary / binary]
+    FP --> F1[FP32 / FP16 / BF16]
+    FP --> F2[FP8 E4M3 / E5M2]
+    FP --> F3[FP6 / FP4 E2M1]
+    NU --> N1[NF4 NormalFloat]
+    NU --> N2[Logarithmic / power-of-two]
+    NU --> N3[Codebook / vector quant]
+    BFP --> B1[MXINT8]
+    BFP --> B2[MXFP8 / MXFP6 / MXFP4]
+    style INT fill:#e9f2fb
+    style FP fill:#fdeceb
+    style NU fill:#eaf6ee
+    style BFP fill:#e9f7f4
+```
+
+The taxonomy's key insight (developed below) is that the integer and floating-point families sit at
+opposite ends of the range-versus-precision tradeoff, while the non-uniform and block-floating-point
+families bridge them — non-uniform by matching the data distribution, block-FP by giving each block a
+shared scale that adds floating-point-like range adaptation to otherwise-uniform elements.
+
 ## The range-versus-precision tradeoff, visualized
 
 ![Numeric format map: dynamic range vs. precision](../assets/charts/04_format_range_precision.png)

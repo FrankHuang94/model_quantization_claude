@@ -52,6 +52,15 @@ consequential shift for LLM workloads than a TOPS increment, because it brings
 matrix-multiply acceleration to the GPU where much on-device LLM work (via MLX) actually
 runs.
 
+![Apple on-device quantization capability roadmap](../assets/charts/08_apple_roadmap.png)
+
+The capability roadmap above tracks when each of Apple's on-device quantization capabilities landed —
+INT8 quantization from the start, weight palettization from the iOS 15 era, then the cluster of
+generative-AI-enabling capabilities (per-grouped-channel palettization, INT4 block-wise quantization,
+the stateful KV cache) arriving together in iOS 18 / macOS Sequoia (2024) alongside Apple Intelligence,
+and the M5 GPU Neural Accelerators in 2025. The clustering of the LLM-enabling capabilities in 2024 is
+the clearest signal of when Apple's stack converged on on-device generative AI.
+
 | ANE / chip generation | Year | NE cores | Vendor TOPS ⚠️ | Precision (inferred) | Notes |
 |---|---|---|---|---|---|
 | A11 | 2017 | 2 | 0.6 | ~FP16/INT8 | First ANE; Face ID, photos |

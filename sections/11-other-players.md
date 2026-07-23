@@ -38,6 +38,36 @@ players on a single axis — the multipolar landscape resists that — but to ma
 contribution to the quantization ecosystem, so a reader can locate any given edge-AI deployment target
 within the broader picture and understand what quantization support it actually offers.
 
+## The player landscape by market segment
+
+Before the per-player detail, the diagram below maps the players onto the market segments they lead or
+compete in, showing the multipolar structure at a glance.
+
+```mermaid
+flowchart TD
+    ROOT[Edge-AI silicon & tooling players] --> MOB[Flagship mobile]
+    ROOT --> PC[AI PC]
+    ROOT --> EDGE[Robotics / edge-server]
+    ROOT --> TINY[tinyML / embedded]
+    ROOT --> AUTO[Automotive]
+    ROOT --> TOOL[Cross-vendor tooling]
+    MOB --> M1[Qualcomm · Apple · MediaTek]
+    MOB --> M2[Samsung · Google · Huawei]
+    PC --> P1[Intel · AMD · Qualcomm]
+    EDGE --> E1[NVIDIA Jetson]
+    TINY --> T1[ARM Ethos IP]
+    AUTO --> A1[Mobileye · NVIDIA · Qualcomm]
+    TOOL --> TT1[NVIDIA TensorRT · Intel OpenVINO]
+    TOOL --> TT2[Google LiteRT · open-source stack]
+    style MOB fill:#e9f2fb
+    style PC fill:#fdeceb
+    style TOOL fill:#e9f7f4
+```
+
+The diagram previews the section's conclusion: the edge-AI landscape is many markets, each with different
+leaders, unified only by the common INT8/INT4 quantization baseline — the multipolar reality this section
+maps player by player.
+
 ## Samsung — Exynos NPU and Galaxy AI
 
 **Silicon.** Samsung is unusual as both a chipmaker (Exynos SoCs, with an integrated NPU) and a

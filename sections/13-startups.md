@@ -27,6 +27,31 @@ All three depend on quantization: the software companies *do* quantization, and 
 *execute* quantized models (in-memory compute is intrinsically low-precision, and edge accelerators
 are integer-quantization-optimized). This section maps all three.
 
+The diagram below places the three categories on the AI-infrastructure stack (Section 13's later
+analysis), showing where each competes and with whom.
+
+```mermaid
+flowchart TD
+    STACK[AI-infrastructure stack] --> SILICON[Silicon layer]
+    STACK --> OPT[Model-optimization layer]
+    STACK --> SERVE[Serving layer]
+    SILICON --> HW1[In-memory / novel-compute chips<br/>d-Matrix · EnCharge · Axelera · Rain · Mythic]
+    SILICON --> HW2[Edge AI accelerators<br/>Hailo · SiMa.ai · Kneron · Femtosense]
+    SILICON -. competes with .-> INC1[Incumbent silicon<br/>NVIDIA · SoC NPUs]
+    OPT --> SW1[Compression software<br/>Multiverse · Pruna · Deci · Neural Magic · Nota]
+    OPT -. pressured by .-> OSS[Open-source quant ecosystem]
+    SERVE --> SV1[Cost-efficient inference services<br/>Together · Fireworks]
+    SERVE -. competes with .-> INC2[Cloud providers]
+    style HW1 fill:#fdeceb
+    style HW2 fill:#e9f7f4
+    style SW1 fill:#e9f2fb
+```
+
+The diagram previews the section's competitive analysis: hardware startups compete with entrenched
+silicon (high capital, high risk), software startups face open-source commoditization, and serving
+companies compete with cloud providers — with quantization the common enabling technology across all
+three layers.
+
 A note on scope and confidence: the startup landscape moves fast — funding rounds, acquisitions,
 pivots, and shutdowns happen continually — so the figures and statuses here are a snapshot from public
 reporting as of the generation date, flagged accordingly (⚠️), and should be verified against current

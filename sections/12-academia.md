@@ -43,6 +43,42 @@ frontier.
 
 ![Leading labs by landmark quantization-method contributions](../assets/charts/12_lab_contributions.png)
 
+The diagram below maps the leading groups to their signature methods and the strands they anchor,
+showing the research landscape's structure before the per-group detail.
+
+```mermaid
+flowchart LR
+    subgraph LABS["Leading groups"]
+        HAN[MIT HAN Lab]
+        QC[Qualcomm AI Research]
+        IST[IST Austria]
+        UW[UW/CMU · Dettmers]
+        BERK[UC Berkeley]
+        MS[Microsoft Research]
+        COR[Cornell · De Sa]
+        META[Meta FAIR]
+    end
+    HAN --> M1[AWQ · SmoothQuant · TinyML]
+    QC --> M2[DFQ · AdaRound]
+    IST --> M3[GPTQ · SpQR · Marlin]
+    UW --> M4[LLM.int8 · QLoRA · NF4]
+    BERK --> M5[HAWQ · SqueezeLLM · KVQuant]
+    MS --> M6[BitNet · ZeroQuant]
+    COR --> M7[QuIP · QuIP#]
+    META --> M8[SpinQuant]
+    M1 --> S1[Co-design strand]
+    M2 --> S2[PTQ-methods strand]
+    M3 --> S1
+    M4 --> S3[Accessibility strand]
+    M5 --> S2
+    M6 --> S4[Native-training strand]
+    M7 --> S5[Theory strand]
+    M8 --> S6[Rotation strand]
+    style HAN fill:#e9f2fb
+    style S3 fill:#eaf6ee
+    style S5 fill:#fdeceb
+```
+
 ### MIT HAN Lab (Song Han)
 
 Song Han's group at MIT is arguably the single most influential academic group in efficient deep

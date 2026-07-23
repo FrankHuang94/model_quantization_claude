@@ -99,7 +99,30 @@ the stack commercially; the **benchmarks** measure the whole; and the **model-sy
 Intelligence) are the end products that everything enables. This stacked reading — silicon and formats at
 the base, tooling and methods in the middle, research and commerce cutting across, benchmarks measuring,
 products on top — is how the 92 entities relate, and it mirrors the AI-infrastructure-stack view of
-Section 13. The database's categorization is thus not arbitrary but reflects the ecosystem's layered
+Section 13.
+
+```mermaid
+flowchart TD
+    PROD[Model systems<br/>Apple Intelligence] --> METH
+    subgraph MID["Methods & tooling"]
+        METH[Methods · 25<br/>GPTQ · AWQ · QuIP# · BitNet …]
+        FW[Frameworks · 17<br/>TensorRT · Core ML · LiteRT · llama.cpp …]
+    end
+    METH --> FW
+    FW --> BASE
+    subgraph BASE["Silicon, formats & standards"]
+        CHIP[Chipmakers · 10 + ARM IP]
+        FMT[Formats & standards<br/>FP8 · MX · ONNX]
+    end
+    LABS[Research labs · 12] -. produce methods, inform silicon .-> METH
+    LABS -. .-> CHIP
+    STARTUP[Startups · 20] -. attack layers commercially .-> CHIP
+    STARTUP -. .-> FW
+    BENCH[Benchmarks · MLPerf · lm-eval] -. measure the whole .-> FW
+    style BASE fill:#e9f7f4
+    style MID fill:#e9f2fb
+    style PROD fill:#eaf6ee
+``` The database's categorization is thus not arbitrary but reflects the ecosystem's layered
 structure, and navigating it by layer (what silicon, what formats, what tooling, what methods, who
 researches, who commercializes, how it's measured, what it produces) is the most illuminating way to use
 it.
