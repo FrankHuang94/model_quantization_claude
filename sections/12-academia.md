@@ -432,6 +432,127 @@ solved, and the open problems cluster at the harder regimes (sub-4-bit, activati
 new modalities) and at the algorithm-hardware boundary (fast kernels, hardware-aligned formats,
 automated co-design) — exactly where the field's research energy is concentrated.
 
+## Landmark-paper deep dives
+
+A few landmark papers deserve individual treatment as exemplars of how quantization research advances,
+complementing the technique descriptions of Sections 02 and 05 with the *research* perspective.
+
+**GPTQ (Frantar, Ashkboos, Hoefler, Alistarh, 2022)** is a model of impactful quantization research: it
+took an existing idea (Optimal Brain Surgeon / AdaRound-style output-error minimization), identified why
+it did not scale (the Hessian computation), solved the scaling problem with clever numerics (Cholesky-
+based lazy-batch updates), and released fast, usable code. The result was immediately adopted because it
+was both a genuine algorithmic advance and a practical tool. GPTQ exemplifies the field's most impactful
+mode: take a principled idea, make it scale, ship it fast.
+
+**AWQ (Lin et al., MIT, 2023)** exemplifies a different mode — finding a simple, robust insight that beats
+more complex methods. AWQ's observation that salient weights (connected to high-activation channels)
+should be protected, and that a simple per-channel scaling achieves this without backpropagation or
+reordering, produced a method that is faster, more robust, and more kernel-friendly than alternatives.
+AWQ shows that in quantization, the simplest method that captures the key insight often wins over more
+elaborate approaches, especially when the simplicity yields deployment advantages (reorder-free kernels).
+
+**QLoRA (Dettmers et al., 2023)** exemplifies research that opens a new *capability* rather than just
+improving a metric. By combining 4-bit NF4 quantization with LoRA adapters, QLoRA did not just compress
+models — it made fine-tuning large models accessible on modest hardware, which changed who could do the
+work. The NF4 format (information-theoretically optimal for Gaussian weights) is an elegant technical
+contribution, but the paper's impact came from the capability it unlocked (single-GPU fine-tuning of
+large models), showing that opening a new capability can be more impactful than incremental accuracy.
+
+**QuIP# (Cornell, 2024)** exemplifies theory-driven research reaching a frontier. By combining incoherence
+processing (a provable property) with lattice codebooks (optimal sphere packing), it achieved near-optimal
+2-bit quantization — a result grounded in mathematics rather than empirical search. QuIP# shows that deep
+theory can push the frontier where empirical methods plateau, achieving what trial-and-error could not.
+
+**BitNet b1.58 (Microsoft, 2024)** exemplifies paradigm-challenging research. Rather than improving
+post-training quantization, it questioned the paradigm — why quantize after training when you can train
+for low precision? — and showed ternary-trained models matching full-precision quality. Whether it scales
+is open, but it exemplifies research that reframes the problem rather than incrementally improving the
+existing approach, the highest-risk, highest-reward mode.
+
+These five illustrate the field's modes of advance: scale a principled idea (GPTQ), find the simple robust
+insight (AWQ), open a new capability (QLoRA), apply deep theory (QuIP#), and challenge the paradigm
+(BitNet). Understanding these modes helps predict where impactful research comes from — not always from
+the most complex method, but from the one that scales, simplifies, enables, proves, or reframes.
+
+## The KV-cache and long-context research strand
+
+A rapidly-growing research strand deserving specific mention is **KV-cache quantization**, which emerged
+as context windows grew and the cache became a memory bottleneck (Section 05). The key research
+contributions — KIVI (asymmetric 2-bit KV, per-channel keys and per-token values), KVQuant (per-channel
+key quantization with non-uniform datatypes and outlier isolation for very long context), and related
+work — came from a mix of academic and industry groups (Berkeley's KVQuant, and KIVI from a
+multi-institution collaboration). This strand is distinctive because it addresses a *systems* bottleneck
+(cache memory) with a *quantization* solution, and it required understanding the specific statistics of
+keys versus values (the per-channel-key, per-token-value insight). It is also a strand where research
+reached production quickly, because the memory payoff is so direct — KV-cache quantization moved from
+research to near-default in serving runtimes within a year or two. The strand is active and growing as
+context windows extend to hundreds of thousands of tokens and as KV-cache quantization co-designs with
+attention-sparsity and cache-eviction methods (keeping only important tokens). It exemplifies the field's
+responsiveness to emerging bottlenecks — as long context became important, the research community
+quickly produced the KV-cache quantization methods to address it, showing how quantization research
+tracks the evolving needs of deployed systems.
+
+## The diffusion and multimodal frontier
+
+A comparatively under-developed but growing research area is **quantization for diffusion and multimodal
+models**, which lags LLM quantization and represents an open frontier (Section 14). Diffusion models pose
+distinctive challenges: they run the same network dozens of times over denoising steps, so per-step
+quantization error compounds visibly in the output (Section 03/07); the network is sensitive to timestep-
+conditioned activation ranges; and the quality metric (image fidelity) is different from LLM perplexity.
+Research on diffusion quantization (post-training quantization methods adapted for the denoising process,
+timestep-aware calibration, and methods that account for the iterative error accumulation) is active but
+less mature than LLM quantization, and INT8 is workable while sub-8-bit remains difficult. Multimodal
+models (vision-language) pose different challenges — the vision encoder, cross-modal projections, and
+language backbone have different statistics and sensitivities, requiring calibration that spans
+modalities. These areas are under-researched relative to their growing importance (on-device image
+generation and multimodal assistants are increasingly desired), and they represent a frontier where the
+research community's attention is beginning to turn. The relative immaturity here, compared to the
+solved LLM-weight-quantization problem, shows that the field's attention has been concentrated on LLMs
+(driven by their commercial centrality) and that other modalities are the next frontier — a gap Section
+14 identifies as a key forward direction. Groups working on efficient diffusion and multimodal models
+(including HAN Lab and others) are beginning to address this, but it remains one of the field's more
+open areas, offering opportunity for impactful research.
+
+## Funding, resources, and the compute question
+
+The resource requirements of quantization research shape who can do it and what gets studied, a dynamic
+worth noting. Quantization research requires access to models (increasingly available via open weights,
+which democratized the field), calibration and evaluation data, and — critically — *compute* to run the
+quantization and, especially, to evaluate quantized models thoroughly across tasks. While quantization
+itself is often cheap (PTQ methods run in GPU-hours), thorough evaluation across many models, bit-widths,
+and task suites is expensive, and quantization-aware or quantization-native training (BitNet, QAT
+methods) requires substantial training compute. This creates a resource gradient: well-funded groups
+(the corporate labs, elite universities with industry partnerships) can pursue the compute-intensive
+directions (native training, large-scale evaluation), while smaller groups focus on the compute-light
+PTQ methods. The open-model ecosystem partly levels this (everyone can access Llama/Qwen weights), which
+is why the accessible PTQ methods (GPTQ, AWQ, HQQ) came from a mix of institutions, while the compute-
+heavy directions (quantization-native training at scale) come mostly from well-resourced corporate labs
+(Microsoft's BitNet). Funding for quantization research comes substantially from industry (given its
+commercial value) — corporate research labs fund their own, and companies fund academic groups through
+grants, partnerships, and hardware access. This industry funding accelerates the field but also shapes
+its priorities toward commercially-relevant directions (on-device LLMs, serving efficiency), as noted
+earlier. The compute question is increasingly salient as the field pushes toward low-precision *training*
+(which is expensive), potentially widening the resource gradient between well-funded and smaller groups.
+
+## Surveys, benchmarks, and the field's self-organization
+
+A mature field develops its own self-organizing infrastructure — surveys, benchmarks, shared evaluation
+practices — and quantization is developing these, worth noting as a sign of the field's maturation.
+**Surveys** like Qualcomm AI Research's "A White Paper on Neural Network Quantization" and various
+academic surveys have organized the field's knowledge, providing the taxonomies (PTQ vs QAT, granularity,
+etc.) that Section 03 draws on and that newcomers rely on. **Shared evaluation** practices (evaluating on
+common models like Llama, using lm-evaluation-harness, reporting FP16 deltas) are emerging, though
+imperfectly (Section 05's comparability caveat). **Benchmarks** specific to quantization are developing
+(Section 15). And the field has developed shared *reference implementations* (AutoGPTQ, AutoAWQ, the
+Hugging Face quantization backends) that serve as common ground. This self-organization is a sign of
+maturation — the field is moving from a collection of individual methods toward an organized discipline
+with shared taxonomies, benchmarks, and tools. The self-organization is still incomplete (the
+comparability problem persists, benchmarks are immature), but the trajectory is toward a more organized,
+standardized field, which Section 15 develops. The role of the surveys in particular has been important:
+by organizing the sprawling method landscape into coherent taxonomies, they have made the field
+learnable and have provided the conceptual scaffolding (the design axes of Section 03) that structures
+how practitioners and researchers think about quantization.
+
 ## Synthesis
 
 The quantization research landscape is a small, fast-moving, high-impact field where the industry-
