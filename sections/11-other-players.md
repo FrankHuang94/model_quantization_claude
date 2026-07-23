@@ -615,6 +615,54 @@ make AI fit their power, cost, and memory constraints — quantization is the un
 technology of the entire multipolar edge-AI landscape, from the largest players to the smallest
 niche accelerators.
 
+## Processing-in-memory: a shared frontier
+
+Several of these players — Samsung and SK Hynix (memory makers), and various research efforts — are
+pursuing **processing-in-memory (PIM)**, which intersects with quantization in an important way
+(building on Section 06's compute-in-memory discussion). PIM places computation inside or adjacent to
+the memory array, attacking the data-movement energy that dominates edge-AI power (Section 06's
+energy asymmetry). Samsung has demonstrated HBM-PIM and LPDDR-PIM products aimed at accelerating the
+memory-bound matmuls of AI, and the approach has a natural affinity with quantization: PIM's in-memory
+computation is inherently limited-precision (the analog or near-memory compute has restricted
+accuracy), so it pairs with low-bit quantization, and PIM's whole value proposition — avoiding weight
+movement — is complementary to quantization's reduction of the bytes-per-weight. For memory-bound LLM
+decode specifically, PIM addresses the same bottleneck quantization does (weight movement from memory),
+so PIM plus aggressive weight quantization could compound to dramatically reduce the energy and
+latency of on-device generation. PIM remains largely research-and-early-product (🟡→🔴) rather than
+mainstream, facing challenges (integration complexity, programming models, the analog-precision
+limits), but it is a shared frontier that several major players (especially the memory makers Samsung
+and SK Hynix) are investing in, and it represents a hardware-level attack on the same data-movement
+problem that quantization addresses at the representation level. If PIM matures, it would make
+ultra-low-precision quantization not just beneficial but necessary (the in-memory substrate is
+intrinsically low-precision), tightening the co-design between quantization and memory technology.
+The memory makers' involvement is strategically notable — it means the quantization frontier is being
+pushed not only by the SoC/NPU vendors but by the memory industry, from the other side of the
+memory-compute boundary.
+
+## The developer's cross-vendor reality
+
+For a developer targeting multiple vendors' hardware — a common situation, since an app might run on
+iPhones, Snapdragon and MediaTek Android phones, and AI PCs — the multipolar landscape is a practical
+challenge that shapes how quantization is done in practice. The reality is that a single quantized
+model rarely deploys optimally across all targets without per-vendor work: the exchange-format
+fragmentation (Section 06), the differing native precision support, and the vendor-specific runtimes
+mean that reaching the whole market requires either targeting a portable runtime (LiteRT, ONNX
+Runtime) that abstracts the vendors at some performance cost, or maintaining per-vendor quantized
+variants and deployment paths. Many developers pragmatically choose the portable-runtime path for
+breadth (LiteRT with vendor delegates/accelerators reaches Android broadly; ONNX Runtime with
+execution providers reaches many targets) and accept that maximum per-device performance would require
+vendor-specific tuning they cannot afford across every target. The pre-quantized-model ecosystem
+helps: for LLMs, downloading a GGUF or a vendor-optimized model (from Qualcomm AI Hub, or a LiteRT
+Gemma model) offloads the quantization work. But the cross-vendor reality remains that the fragmented
+landscape imposes a real tax on developers who must reach diverse hardware, and it is why the
+standardization efforts (Section 15) and the portable runtimes are so valuable — they are the tools
+that make the multipolar landscape tractable for developers who cannot optimize separately for ten
+different quantization stacks. The practical guidance for a cross-vendor developer is to use a
+portable runtime and standard quantization schemes (INT8, weight-only INT4) as the common denominator,
+accept some per-device performance loss versus vendor-specific optimization, and reserve vendor-
+specific tuning for the highest-value targets — a pragmatic accommodation to the multipolar reality
+that trades peak performance for reach.
+
 ## Synthesis: the multipolar quantization landscape
 
 Across all ten players (these seven plus Apple/Qualcomm/MediaTek), several patterns hold. **INT8
