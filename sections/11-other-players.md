@@ -738,8 +738,13 @@ segment's constraints.
 
 This section contributes ten-plus entities to the master database (Section 16): Samsung, Google
 (+ LiteRT, Edge TPU, Gemini Nano), NVIDIA (+ TensorRT, Jetson), Intel (+ OpenVINO, Neural
-Compressor), AMD (+ Ryzen AI, Quark), ARM (+ Ethos, KleidiAI), and Huawei (+ Ascend, HiAI, CANN) —
-see Section 16.
+Compressor), AMD (+ Ryzen AI, Quark), ARM (+ Ethos, KleidiAI), and Huawei (+ Ascend, HiAI, CANN),
+plus the adjacent specialists noted above (Mobileye for automotive vision). Together with the
+Apple, Qualcomm, and MediaTek entries from Sections 08–10, these constitute the chipmaker and
+framework backbone of the master database, spanning the full range of edge-AI silicon and the
+tooling that quantizes for it — from tinyML IP to AI-PC NPUs to edge GPUs — and they anchor the
+cross-player analysis that Section 16 consolidates into a single deduplicated table. See Section 16
+for the full consolidated entries with their maturity and confidence tags.
 
 ---
 
