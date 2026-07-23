@@ -36,3 +36,12 @@ OpenVINO / Neural Compressor,framework,ptq-tool,cross-hardware quant toolkit,INT
 AMD,chipmaker,edge-npu,Ryzen AI XDNA2 Block FP16,INT4;INT8;BF16;BlockFP16,production-shipped,Block FP16 bet + transformer HW primitives,Ryzen AI 300 XDNA2,official-spec,11;16
 ARM,ip-vendor,edge-npu,Ethos IP + KleidiAI integer kernels,INT8;INT4,production-shipped,Ubiquitous integer IP across edge,Ethos-U/N + KleidiAI + CMSIS-NN,sdk-docs,11;16
 Huawei,chipmaker,mobile-soc,DaVinci NPU + Ascend,INT8;INT4;FP16,production-shipped,Vertically integrated; China domestic,Ascend + Kirin DaVinci + MindSpore,inferred,11;16
+MIT HAN Lab,research-lab,academic,efficiency + algorithm-hardware co-design,W4;W8A8,production-shipped,Co-design; AWQ+SmoothQuant+TinyML,AWQ / SmoothQuant / Deep Compression,paper,12;16
+IST Austria (Alistarh),research-lab,academic,rigorous LLM compression + systems,W4;W3;sparse,production-shipped,GPTQ + Marlin fast kernels,GPTQ / SpQR / Marlin,paper,12;16
+UW/CMU (Dettmers),research-lab,academic,accessible LLM quantization tooling,W8;W4,production-shipped,Democratization via bitsandbytes/QLoRA,LLM.int8 / QLoRA / NF4,paper,12;16
+UC Berkeley (Keutzer),research-lab,academic,mixed precision + KV cache,mixed;KV,production-shipped,Hessian-aware mixed precision,HAWQ / SqueezeLLM / KVQuant,paper,12;16
+Microsoft Research,research-lab,academic,quantization-native + serving,1.58-bit;W8A8,research-only,BitNet native low-bit training,BitNet / ZeroQuant / LLM-QAT,paper,12;16
+Cornell (De Sa),research-lab,academic,extreme low-bit theory,W2;W3,sdk-limited,Incoherence + lattice codebooks,QuIP / QuIP#,paper,12;16
+Meta FAIR,research-lab,academic,rotation + edge deploy,W4A4,sdk-limited,SpinQuant learned rotations,SpinQuant / ExecuTorch,paper,12;16
+Google Research/DeepMind,research-lab,academic,foundational INT8 + tooling,INT8,production-shipped,Integer-arithmetic INT8 scheme,Jacob et al INT8 / LiteRT,paper,12;16
+ETH Zurich (Hoefler),research-lab,academic,compression systems,W4,production-shipped,GPTQ co-author + HPC systems,GPTQ (co),paper,12;16

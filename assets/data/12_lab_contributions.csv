@@ -1,0 +1,11 @@
+lab,landmark_methods,focus
+MIT HAN Lab,5,efficiency+quant
+Qualcomm AI Research,4,PTQ methods
+IST Austria (Alistarh),4,GPTQ/sparse
+UW / Dettmers,4,LLM quant tooling
+Berkeley (Keutzer),4,mixed-precision/KV
+Microsoft Research,3,BitNet/ZeroQuant
+Cornell (De Sa),2,QuIP codebooks
+Meta FAIR,3,rotation/SpinQuant
+Google/DeepMind,3,foundational INT8
+ETH Zurich,2,GPTQ/systems
