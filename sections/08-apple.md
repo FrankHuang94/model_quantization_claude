@@ -366,6 +366,111 @@ an advantage the discrete-accelerator competitors structurally lack. The interac
 quantization is a clean example of hardware and compression co-designing to enable a use case
 neither achieves alone.
 
+## Palettization versus linear quantization: the technical tradeoff
+
+Because palettization is Apple's distinctive quantization approach, understanding when it
+beats linear (uniform integer) quantization is practically useful. **Palettization**
+(codebook/lookup-table, Section 04's non-uniform family) stores a small table of centroid
+values and represents each weight by an index; an `n`-bit palettization has `2ⁿ` centroids.
+Its advantages: it can place centroids optimally for the weight distribution (better
+accuracy-per-bit than uniform for the bell-shaped weights), and — importantly for Apple — the
+decode is a table lookup that the ANE handles efficiently. Its disadvantages: the lookup adds
+a step, and at higher bit-widths the codebook grows. **Linear quantization** (uniform affine)
+has cheaper decode (scale-and-shift) and maps well to the GPU's integer/float units. Apple's
+guidance — palettization for the ANE, INT4 block-wise linear for the GPU — reflects that the
+two compute units have different decode efficiencies. The choice also depends on the model:
+palettization's per-grouped-channel mode (normalizing per output-channel group before
+clustering) narrows the accuracy gap to linear per-group quantization, and for very
+aggressive compression the codebook approach (like AQLM/QuIP# of Section 05) can retain more
+accuracy per bit. In practice, Apple developers targeting the ANE for a memory-and-latency-
+sensitive feature reach for palettization, while those running LLMs on the GPU via MLX or
+Core ML's GPU path use INT4 linear per-group — and the two can even be mixed across a model.
+This dual approach is a distinctive feature of Apple's stack that reflects its heterogeneous
+compute units and its codebook-friendly ANE.
+
+## Developer experience: quantizing a model for Apple silicon
+
+The practical developer workflow illustrates Apple's abstraction-first philosophy. A developer
+with a PyTorch model converts it with `coremltools`, choosing a compression configuration
+(e.g. 4-bit per-grouped-channel palettization, or INT4 block-wise linear quantization),
+optionally providing calibration data or a fine-tuning loop for higher accuracy. The output
+is a Core ML model that the runtime schedules across ANE, GPU, and CPU automatically — the
+developer does not (and largely cannot) explicitly target the ANE; they express the model and
+its compression, and the compiler and runtime decide placement. Performance analysis is done
+by measurement (Core ML performance reports, Instruments, and the on-device profiling Apple
+provides) rather than by reasoning from a spec. For LLMs, the developer might instead use
+`mlx-lm`, quantizing to 4-bit group-wise and running on the GPU, with more explicit control.
+The experience is higher-level than the Android NPU SDKs (QNN, NeuroPilot) — Apple trades the
+low-level control those offer for a simpler abstraction and the promise that the compiler
+knows the silicon best. For most developers this is a productivity win; for those needing to
+squeeze maximum performance or reason precisely about the hardware, the opacity is a
+limitation. The net is a developer experience optimized for Apple's own priorities —
+shipping reliable on-device features quickly — rather than for maximal low-level tunability.
+
+## Apple versus the Android SoC approach
+
+Contrasting Apple with the Android SoC vendors (Qualcomm, MediaTek, Samsung, Sections 09–11)
+sharpens both. The differences are structural:
+
+| Dimension | Apple | Android SoC vendors (Qualcomm/MediaTek) |
+|---|---|---|
+| Stack control | Whole stack (silicon → OS → models) | Silicon + SDK; OEMs and app devs bring models |
+| Developer interface | High-level (Core ML), compiler-decides placement | Lower-level NPU SDKs (QNN, NeuroPilot) + high-level (LiteRT) |
+| Quantization style | Palettization (codebook) + linear; ANE-tuned | Integer-centric (INT4/INT8/INT2), explicit |
+| Disclosure | Opaque (ANE internals undisclosed) | More disclosed (published format support) |
+| Aggressive formats (disclosed) | INT4, palettization; no public INT2/FP4 | INT2, FP8 disclosed (Qualcomm 2025) |
+| On-device model | Ships own (Apple Intelligence ~3B) | OEM/third-party models |
+| Memory architecture | Unified (UMA) advantage | Typically shared but less uniformly optimized |
+
+The comparison reveals two philosophies: Apple's **integrated, opaque, ship-the-model**
+approach optimizes for a controlled end-to-end experience and leans on codebook quantization
+matched to its ANE, while the Android vendors' **open-SDK, disclosed-format, bring-your-model**
+approach optimizes for a broad developer and OEM ecosystem and leans on integer quantization
+with explicit format support. Neither is strictly better; they reflect different business
+models (Apple sells integrated devices; Qualcomm/MediaTek sell silicon to OEMs). For
+quantization specifically, Apple's approach means developers work at a higher abstraction and
+trust the compiler, while Android developers have more control and more disclosed capability
+to target — including more aggressive disclosed formats (INT2, FP8) than Apple publicly
+offers, though Apple's non-disclosure means the real capability gap is unknown.
+
+## Beyond LLMs: quantization in vision and computational photography
+
+It is worth remembering that the ANE's original and still-dominant workload is not LLMs but
+**vision and computational photography** — the ANE was created for Face ID and photo
+processing, and it runs the many neural models behind Apple's camera pipeline (semantic
+segmentation, deep fusion, portrait effects, subject isolation), on-device speech (dictation,
+Siri), and accessibility features. These vision and audio models are quantized (typically
+INT8, increasingly with palettization) and run on the ANE for energy efficiency, executing
+continuously or on-demand within tight power budgets. This large, mature, quantized-vision
+workload is the foundation on which Apple's on-device-AI capability was built, and it is why
+Apple's quantization tooling and ANE were mature before the LLM era arrived — the
+computational-photography use case drove years of investment in efficient quantized on-device
+inference. The LLM use case (Apple Intelligence) is the newer, more visible layer, but the
+quantized-vision substrate is larger by inference volume and equally dependent on the same
+Core ML quantization stack. A complete picture of Apple's quantization footprint includes the
+billions of daily quantized vision and audio inferences behind the camera and Siri, not just
+the on-device LLM.
+
+## Case study: a quantized LLM on an iPhone
+
+To make Apple's stack concrete, consider deploying a ~3B or ~7B LLM on an iPhone, per Apple's
+own demonstrated recipe. The model is quantized to INT4 (block-wise linear, group size ~32–128,
+with the embedding and output layers kept higher precision), reducing a 7B model from ~14 GB
+to ~3.5–4 GB so it fits in the phone's unified memory. A **stateful KV cache** is used so the
+attention cache persists across decoding steps as Core ML model state, avoiding recomputation.
+The model runs on the GPU (for the compute-heavy path) or is structured for the ANE where the
+ANE's efficiency helps, with the runtime scheduling placement. Decode is memory-bound, so the
+4-bit weights (a quarter the FP16 traffic) deliver the interactive token rate, and the
+unified memory means no copies between compute units. The result is a capable LLM running
+entirely on-device, privately, at interactive speed — exactly the Apple Intelligence on-device
+tier, or a third-party equivalent built with the same tools. The case illustrates every
+element of Apple's quantization story: INT4 weight quantization for the memory win, KV-cache
+quantization/statefulness for context, unified memory for copy-free execution, and the Core
+ML/MLX tooling that ties it together. It also illustrates the constraint — the model must fit
+the memory budget at the chosen bit-width, which for a phone caps the practical on-device
+model size, which is why Apple's on-device foundation model is ~3B rather than larger, with the
+Private Cloud Compute tier handling what exceeds the on-device envelope.
+
 ## Master database contributions
 
 This section contributes the following entities to the master database (Section 16): Apple
