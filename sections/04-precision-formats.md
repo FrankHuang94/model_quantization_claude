@@ -617,7 +617,9 @@ representation, and a well-engineered quantized model is a deliberate *mixture* 
 formats rather than a single global choice. As the microscaling standard matures and
 FP8/FP4 silicon proliferates, the number of viable formats will first widen and then,
 under the economic pressure of verification and kernel-maintenance cost, narrow toward
-a consolidated set — a dynamic that recurs as a forward-looking theme in Section 14.
+a consolidated set — a dynamic that recurs as a forward-looking theme in Section 14. Format literacy — knowing
+what each representation can and cannot do, and how to read a vendor's format claim
+critically — is a prerequisite for every vendor and deployment discussion that follows.
 
 ---
 
