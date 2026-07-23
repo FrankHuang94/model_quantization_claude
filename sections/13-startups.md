@@ -575,7 +575,9 @@ alongside the chipmakers, frameworks, methods, and research labs of the precedin
 they show that the quantization ecosystem is not only a matter of incumbent silicon and academic
 research but also of an active, well-funded, and consolidating startup landscape betting on the
 commercial value of making AI cheaper and more efficient to deploy — the same value proposition, at the
-company scale, that quantization delivers at the technical scale throughout this database.
+company scale, that quantization delivers at the technical scale throughout this database. The startup
+landscape is, in that sense, the commercial mirror of the technical story the rest of this reference
+tells.
 
 ---
 
