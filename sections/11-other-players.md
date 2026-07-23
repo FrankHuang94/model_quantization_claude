@@ -623,7 +623,10 @@ landscape is even broader than the ten major players suggest, and it is continua
 entrants build AI silicon. The common thread across all of them is the reliance on quantization to
 make AI fit their power, cost, and memory constraints — quantization is the universal enabling
 technology of the entire multipolar edge-AI landscape, from the largest players to the smallest
-niche accelerators.
+niche accelerators. Whatever the ISA, the market segment, or the geopolitical alignment, no edge-AI
+silicon delivers its capability without quantization, which is why every player in this section — and
+every entrant still to come — must have a quantization story, and why this database treats
+quantization as the connective tissue of the entire edge-AI hardware landscape.
 
 ## Processing-in-memory: a shared frontier
 
