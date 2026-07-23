@@ -757,6 +757,40 @@ avoiding the silent-capability-loss failure mode, and it is why the mature end o
 ecosystem increasingly ships quantized checkpoints with published evaluation numbers
 rather than bare weights.
 
+## The progression of methods within the LLM era
+
+It helps to see the methods not as a flat list but as a rapid progression, each solving a
+limitation of its predecessors. The sequence, compressed into roughly three years, was:
+**LLM.int8()** (late 2022) proved large models could be quantized losslessly to INT8 and
+*named* the outlier problem, but INT8 only halves memory. **GPTQ** (late 2022) broke the
+4-bit barrier for weights with accurate error compensation, cutting memory 4×, but needed
+careful calibration and reordering. **SmoothQuant** (late 2022) solved activation
+quantization for W8A8 compute speedups by migrating outliers, but only reached 8-bit.
+**GGUF/llama.cpp and QLoRA/NF4** (2023) made 4-bit *deployable* (CPU/laptop) and
+*trainable* (single-GPU fine-tuning), turning the research result into a mass ecosystem.
+**AWQ** (2023) matched GPTQ with a simpler, more robust, more kernel-friendly approach,
+becoming the co-standard. **SpQR** (2023) pushed toward near-lossless sub-4-bit via
+outlier isolation. Then the sub-4-bit wave: **QuIP/QuIP#** and **AQLM** (2023–2024) made
+2-bit genuinely usable with rotations and codebooks; **QuaRot/SpinQuant** (2024) extended
+rotations to W4A4 for combined memory-and-compute savings; **HQQ** (2024) made
+quantization fast and data-free; and **KIVI/KVQuant** (2024) tackled the KV cache for long
+context. Most recently (2025–2026), the frontier has been **FP8/FP4 hardware-aligned
+quantization**, **rotation methods maturing toward production**, and
+**quantization-native training** (BitNet lineage) challenging the post-training paradigm
+altogether.
+
+Each step in this progression addressed a specific limitation: INT8 → 4-bit (memory),
+weight-only → weight+activation (compute), post-hoc → trainable (fine-tuning), 4-bit →
+2-bit (extreme memory), and software → hardware-aligned formats (co-design). The
+remarkable thing is the *pace* — three years from "INT8 is hard" to "2-bit is usable and
+FP4 hardware ships" — driven, as Section 02 argued, by the open-source dynamic and the
+shared substrate of open model weights. The pace has consequences for anyone building on
+these methods: the "best" method is a moving target, tooling churns, and the durable bet
+is on the *principles* (error compensation, outlier handling, rotation, per-group
+granularity, hardware-aligned formats) rather than any specific named method, because the
+principles persist while the acronyms turn over. That is the through-line this section has
+tried to keep visible beneath the method zoo: the names change, the primitives do not.
+
 ## Synthesis
 
 The LLM-quantization method zoo, for all its acronyms, reduces to a few recurring
