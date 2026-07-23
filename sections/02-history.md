@@ -709,7 +709,10 @@ co-design**: the highest-leverage recent advances (microscaling formats, rotatio
 methods fused into layers, quantization-native training, KV-cache quantization) are
 those that align the algorithm with what hardware can natively execute. The next
 sections take up that co-design problem in depth — first the core techniques and
-theory (Section 03), then the precision formats themselves (Section 04).
+theory (Section 03), then the precision formats themselves (Section 04). Keep the
+four-era arc in mind as a scaffold: nearly every method, format, and vendor
+capability discussed later in this database can be located as a descendant of one
+of these four historical waves.
 
 ---
 
