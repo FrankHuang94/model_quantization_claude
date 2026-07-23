@@ -1,0 +1,15 @@
+method,effective_bits,accuracy_retention,category
+FP16 baseline,16.0,100.0,baseline
+LLM.int8(),8.5,99.7,weight+act
+SmoothQuant W8A8,8.0,99.0,weight+act
+GPTQ W4,4.2,98.5,weight-only
+AWQ W4,4.2,98.8,weight-only
+GGUF Q4_K_M,4.8,98.9,weight-only
+bitsandbytes NF4,4.1,98.2,weight-only
+HQQ 4-bit,4.1,97.9,weight-only
+GPTQ W3,3.2,94.5,weight-only
+QuIP# 3-bit,3.1,96.5,codebook/rotation
+AQLM 2-bit,2.2,93.0,codebook/rotation
+QuIP# 2-bit,2.1,92.0,codebook/rotation
+GGUF Q2_K,2.6,89.0,weight-only
+QuaRot W4A4,4.3,95.0,rotation-W4A4
