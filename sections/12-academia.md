@@ -32,7 +32,14 @@ AQLM, the rotation methods, and more in rapid succession. The cumulative curve's
 
 The following are the most influential groups driving quantization research, with their focus and
 notable output. This is not exhaustive — the field is broader — but it captures the groups whose work
-recurs throughout this database.
+recurs throughout this database. The selection criterion is impact on the *deployed* state of
+quantization: groups whose methods or infrastructure are actually used, not merely cited. By that
+measure the list is fairly stable — the same names (Han, Alistarh, Dettmers, Nagel, Keutzer, De Sa)
+recur across the landmark methods — which itself says something about the field's concentration: a
+relatively small number of groups have produced a large share of the methods that ship. This
+concentration is a feature of a young, fast-moving field where a strong method quickly becomes a
+standard, and it means that tracking a manageable number of groups gives a good view of the whole
+frontier.
 
 ![Leading labs by landmark quantization-method contributions](../assets/charts/12_lab_contributions.png)
 
