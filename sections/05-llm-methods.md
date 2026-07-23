@@ -504,6 +504,172 @@ accuracy annotation, making the compression ranking explicit: the 2-bit codebook
 rotation methods (QuIP#, AQLM) at the compressed end, the 4-bit workhorses in the
 middle, and the 8-bit activation methods at the conservative end.
 
+## SmoothQuant's migration math in detail
+
+SmoothQuant is worth working through precisely because its algebra recurs (in AWQ, in
+the rotation methods' conceptual lineage). For a linear layer computing `Y = XW`, note
+that inserting a diagonal per-channel scaling `S` and its inverse leaves the product
+unchanged: `Y = (X S⁻¹)(S W)`. SmoothQuant chooses `S` so that the *smoothed*
+activations `X̂ = X S⁻¹` have their outliers tamed (divided down) while the *adjusted*
+weights `Ŵ = S W` remain quantizable (scaled up, but weights have headroom). The
+per-channel scale is set as `s_j = max(|X_j|)^α / max(|W_j|)^(1-α)`, where `α` (the
+migration strength, typically 0.5) balances how much difficulty moves from activations
+to weights. Because activation outliers are systematic (the same channels), the
+offline-computed `S` works across inputs. The elegance is that no information is lost —
+the product is mathematically identical — yet both operands become quantizable. AWQ uses
+the same "scale to protect, preserve the product" algebra but chooses the scaling to
+protect *salient weights* rather than to flatten activations, and the rotation methods
+generalize the diagonal `S` to a full orthogonal matrix `Q` (with `Q⁻¹ = Qᵀ`), which can
+address outliers no diagonal scaling can reach. Seeing SmoothQuant, AWQ, and QuaRot as
+three points on a spectrum — diagonal scaling to protect activations, diagonal scaling
+to protect weights, full rotation to flatten everything — makes the method family
+coherent rather than a list.
+
+## QAT for LLMs: the retraining option
+
+Everything above is post-training; but when PTQ's accuracy is insufficient (typically
+at 3-bit and below, or for sensitive fine-tuned behaviors), **quantization-aware
+training** for LLMs is the escalation, and a few methods make it tractable despite LLM
+scale. **LLM-QAT** (2023) applied QAT to LLMs using *data-free* knowledge distillation —
+generating training data from the model itself — to avoid needing the original training
+corpus, and quantized both weights and the KV cache. **EfficientQAT** (2024) reduced the
+cost of low-bit QAT with a block-wise training scheme followed by end-to-end scale
+fine-tuning, making 2–3-bit QAT feasible on large models with modest compute. The
+QLoRA-style approaches (freezing quantized weights, training adapters) are a
+parameter-efficient middle ground that captures much of QAT's benefit cheaply.
+
+The practical role of LLM QAT: it is the tool you reach for when you have decided to
+deploy at an aggressive bit-width (2–3 bit) at scale and can afford some training
+compute, and the PTQ methods leave too much accuracy on the table. For most 4-bit
+deployments, PTQ (GPTQ/AWQ) suffices and QAT is unnecessary — which is why the
+post-training methods dominate. But as sub-4-bit deployment grows (Section 14), and as
+quantization-native training (BitNet) matures, the training-side methods are gaining
+importance, and the clean PTQ-only story of 2023 is giving way to a spectrum from pure
+PTQ through adapter-based recovery to full quantization-aware and quantization-native
+training.
+
+## Data-free versus data-driven methods
+
+A useful axis for organizing the method zoo is how much *data* each needs, because
+calibration data is a real friction in practice (it must be representative, and for some
+domains it is hard to assemble):
+
+- **Data-free**: HQQ and bitsandbytes NF4 quantize from the weights alone, no
+  calibration. Fast and frictionless; slightly lower accuracy at a given bit-width.
+- **Lightly calibrated**: GPTQ, AWQ, SmoothQuant use a small calibration set (128–512
+  sequences) to compute Hessians or scales. Higher accuracy; sensitive to the set's
+  representativeness.
+- **Training-based**: LLM-QAT, EfficientQAT, AQLM (which trains codebooks), and QuIP#'s
+  fine-tuning step use gradient-based optimization. Highest accuracy at low bits;
+  highest cost.
+
+The trend over 2023–2026 has been toward *both* extremes simultaneously: data-free
+methods (HQQ) for frictionless deployment of the many models people want quantized
+quickly, and training-based methods for the frontier low-bit regime where every accuracy
+point is fought for. The lightly-calibrated middle (GPTQ/AWQ) remains the pragmatic
+default for 4-bit. Choosing among them is partly an accuracy decision and partly a
+logistics decision about whether representative calibration data — or training compute —
+is available.
+
+## Deployment case studies: from checkpoint to device
+
+Concrete deployment paths illustrate how these methods combine in practice.
+
+**A 7–8B chat model on a flagship phone.** The typical path: start from the FP16 model,
+quantize weights to 4-bit with AWQ or GPTQ (g=128, embedding/LM-head kept at 8-bit),
+convert to the target runtime's format (GGUF for llama.cpp/MLX-based apps, or the vendor
+NPU format via QNN/Core ML/LiteRT), and enable INT8 or INT4 KV-cache quantization for
+context. The result fits in ~4–5 GB and decodes at interactive speed on the NPU or GPU.
+This is the standard on-device-assistant recipe in 2026.
+
+**A local model on a laptop via llama.cpp/Ollama.** The path: download a GGUF k-quant
+(Q4_K_M is the popular accuracy/size sweet spot, or Q5_K_M for more accuracy, Q3/Q2 for
+tighter memory), run on CPU with SIMD kernels or on Apple silicon via Metal. Zero
+quantization work for the user — the ecosystem publishes pre-quantized GGUF files. This
+is the mass-market local-LLM experience.
+
+**A cost-optimized server deployment.** The path: quantize weights to 4-bit (GPTQ/AWQ)
+or run FP8 weight+activation on FP8-capable GPUs (Hopper/Blackwell), serve via vLLM or
+TensorRT-LLM with Marlin/FP8 kernels, continuous batching, and quantized KV cache. The
+goal is throughput-per-dollar; the choice between weight-only 4-bit and FP8 W8A8 depends
+on whether the workload (batch size, sequence length) is memory- or compute-bound.
+
+**Fitting a very large model in fixed memory.** The path: when a 70B+ model must fit in
+limited VRAM, drop to 3-bit (GPTQ/AWQ with g=64) or 2-bit (QuIP#/AQLM), accepting the
+accuracy hit and slower codebook kernels, because the alternative is not running the
+model at all. This is the memory-forced frontier.
+
+These cases share a structure: pick the bit-width from the memory budget, pick the method
+from the bit-width and the tooling, add KV quantization for context, and validate on the
+actual task. The method zoo looks intimidating but collapses to a few well-worn paths in
+practice.
+
+## The serving-cost economics of quantization
+
+Quantization's value is often quantified in accuracy terms, but its economic driver is
+cost, and the arithmetic is stark. For **on-device**, quantization is frequently the
+difference between a model *fitting or not* — a binary outcome, not a marginal one: a 7B
+model at FP16 (~14 GB) simply does not run on an 8–12 GB phone, while at 4-bit (~4 GB) it
+does. There is no "slower but works" fallback; quantization is the enabler. For
+**server serving**, quantization reduces cost along two axes: weight-only 4-bit roughly
+quadruples decode throughput (memory-bound), directly cutting cost-per-token ~4×, while
+FP8/INT8 weight+activation improves compute-bound throughput. Since inference is the
+dominant lifetime cost of a deployed model — a model is trained once but serves billions
+of tokens — even a modest quantization speedup compounds into large savings, which is why
+every major serving stack invests heavily in quantized kernels. The KV-cache dimension
+adds another axis: quantizing the cache lets a server hold more concurrent long-context
+sessions in the same memory, increasing effective capacity. The economic logic is why
+quantization moved from optional to default in serving: it is not primarily an accuracy
+tradeoff but a cost multiplier, and the accuracy cost (near-zero at 4-bit weight-only)
+is small enough that the economics dominate the decision.
+
+## The frontier: 2025–2026 developments
+
+The method landscape continues to move, and several directions define the current
+frontier (with appropriate confidence caveats, as some are early):
+
+- **Rotation methods maturing toward production.** QuaRot/SpinQuant-style W4A4 and the
+  incoherence approach are gaining kernel support and are the most likely path to
+  practical full-4-bit (memory + compute) LLM inference. ⚠️ still maturing.
+- **MXFP4 inference and training.** As Blackwell-class and edge FP4 hardware spreads,
+  MXFP4 quantization (leveraging the hardware-native microscaling format) is emerging as
+  a hardware-aligned alternative to software INT4 per-group, potentially simplifying the
+  stack by matching the algorithm to the silicon's native format.
+- **Quantization-native models.** BitNet-style ternary/low-bit-trained models continue to
+  be explored at larger scales; if they hold up, they change the game by making
+  post-training quantization unnecessary for the models trained that way.
+- **Better KV-cache and long-context quantization** as context windows grow, including
+  quantization co-designed with attention-sparsity and cache-eviction methods.
+- **Unified, hardware-aware quantization toolchains** that pick method, bit-width, and
+  format automatically for a target device — reducing the manual method-selection burden
+  this section describes.
+
+The stable core (4-bit weight-only + KV quantization) is unlikely to be displaced soon,
+but the frontier is where FP4 hardware, rotation methods, and quantization-native
+training are converging, and Section 14 develops these as forward trends.
+
+## Common failure modes and debugging quantized LLMs
+
+Finally, the practical failure catalog, since quantized LLMs fail in characteristic ways
+(expanded in Section 07):
+
+- **Repetition and degeneration** at aggressive bit-widths — the model loops or produces
+  low-quality text; usually a sign the bit-width is too low or sensitive layers were
+  quantized.
+- **Silent capability loss** — perplexity looks fine but reasoning/code/instruction-
+  following degrades; caught only by task-specific evaluation, not perplexity.
+- **Long-context breakdown** — the model works on short prompts but degrades with long
+  context, often a KV-cache quantization problem.
+- **Calibration-domain mismatch** — a model calibrated on the wrong distribution
+  under-performs on the deployment domain.
+- **Format/kernel mismatch** — the quantized model runs slowly or falls back to
+  higher precision because the target lacks a fast kernel for the chosen scheme.
+
+The debugging loop mirrors Section 03's: measure per-layer error, protect the worst
+offenders (raise their precision), validate on the *actual task* rather than perplexity,
+and confirm the target has a fast kernel for the final scheme. Most quantized-LLM
+problems trace to one of these five causes and resolve with the corresponding remedy.
+
 ## Choosing a method: practical guidance
 
 The method zoo collapses to a manageable decision once the deployment is specified:
