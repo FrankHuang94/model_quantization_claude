@@ -1,0 +1,28 @@
+year,milestone,era,lane
+2015,BinaryConnect,binary/ternary,1
+2016,XNOR-Net / BNN,binary/ternary,0
+2016,Ternary Weight Networks,binary/ternary,1
+2016,DoReFa-Net,binary/ternary,2
+2017,"Deep Compression (prune+quant)",int8-standardization,0
+2017,TensorRT INT8 PTQ,int8-standardization,1
+2018,"Google INT8 scheme (Jacob et al.)",int8-standardization,2
+2018,TFLite INT8 PTQ,int8-standardization,0
+2019,"Data-Free Quantization (DFQ)",int8-standardization,1
+2019,"LSQ (learned step size)",int8-standardization,2
+2020,AdaRound,int8-standardization,0
+2020,HAWQ / mixed precision,int8-standardization,1
+2021,I-BERT / integer transformers,int8-standardization,2
+2022,LLM.int8() / bitsandbytes,llm-era,0
+2022,GPTQ,llm-era,1
+2022,SmoothQuant,llm-era,2
+2023,QLoRA / NF4,llm-era,0
+2023,AWQ,llm-era,1
+2023,GGUF k-quants (llama.cpp),llm-era,2
+2023,OCP FP8 standard,llm-era,3
+2024,BitNet b1.58 (ternary),sub-4bit,0
+2024,QuIP# / AQLM (2-bit),sub-4bit,1
+2024,KV-cache quant (KIVI/KVQuant),sub-4bit,2
+2024,MXFP microscaling (OCP),sub-4bit,3
+2025,FP4 training (Blackwell),sub-4bit,0
+2025,Snapdragon INT2 in silicon,sub-4bit,1
+2026,QAT-native low-bit models,sub-4bit,2
