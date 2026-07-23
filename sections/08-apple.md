@@ -557,6 +557,20 @@ This section contributes the following entities to the master database (Section 
 (chipmaker, ANE), Core ML / coremltools (framework), MLX (framework), and Apple Intelligence
 (on-device model system) — see the consolidated table in Section 16.
 
+In summary, Apple's quantization story is one of quiet, deep, whole-stack integration: a
+Neural Engine that evolved from a photography accelerator into a general on-device neural
+engine, a Core ML tooling stack whose distinctive palettization sits alongside conventional
+linear and block-wise quantization, an MLX framework that has become the high-performance
+on-device LLM path on the unified-memory architecture, and a shipping product — Apple
+Intelligence — that validates the entire approach at the scale of hundreds of millions of
+devices with a quantized ~3B foundation model specialized by adapters. The defining
+characteristics are the codebook-friendly ANE (a hardware bet on non-uniform quantization
+unusual among mobile SoCs), the unified-memory advantage for copy-free quantized inference,
+and the strategic commitment to on-device AI for privacy, latency, cost, and differentiation
+reasons — with the persistent caveat that Apple's opacity means much of the technical detail
+is inferred rather than documented, and every performance claim deserves the skepticism a
+non-disclosing vendor invites.
+
 ---
 
 *Next: [09 — Qualcomm Roadmap](./09-qualcomm.md).*
