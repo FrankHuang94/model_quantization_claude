@@ -507,6 +507,62 @@ is much of the appeal of the OCP standardization effort. Section 14 returns to t
 consolidation pressure as a forward-looking trend; for now the point is that the
 format landscape is broad today but under economic pressure to narrow.
 
+## Formats for the KV cache
+
+The KV cache deserves its own format discussion because it is a distinct tensor with
+distinct statistics and a growing share of edge memory. During autoregressive
+generation, the keys and values of every past token are cached to avoid recomputation;
+for long contexts this cache can exceed the model weights in size. Quantizing it is
+therefore high-leverage, but the KV cache quantizes differently from weights:
+
+- **Keys and values have different distributions.** Empirically, key tensors have
+  pronounced per-channel outlier structure (certain channels are consistently large),
+  while value tensors are better-behaved. This asymmetry is why methods like KIVI
+  quantize keys **per-channel** and values **per-token**, matching each to its outlier
+  structure — a format choice, not just an algorithm choice.
+- **Errors compound over the sequence.** A quantized key from token 5 influences every
+  subsequent token's attention to token 5, so KV-cache quantization error accumulates
+  over the whole generation, making the cache more sensitive than a one-shot weight
+  quantization at the same bit-width.
+- **The practical formats** are INT8 (near-lossless, ~2× cache reduction), INT4 (good
+  with per-channel/per-token handling, ~4×), and 2-bit (aggressive, needs careful
+  outlier handling as in KIVI/KVQuant). FP8 is also used where the hardware supports
+  it, for its outlier robustness. Some runtimes keep a small window of recent tokens
+  in full precision and quantize only the older cache, since recent tokens are
+  accessed most and matter most.
+
+The KV-cache format choice is now a first-class deployment decision for long-context
+on-device LLMs, and it interacts with the weight format: a system might run W4A16
+weights with an INT8 or INT4 KV cache, tuning each independently. Section 05 covers
+the KV-cache *methods*; the point here is that the cache is a separate tensor needing
+its own format, and treating it as an afterthought wastes the memory budget that long
+context most needs.
+
+## Format per role: weights, activations, gradients, and cache
+
+Pulling the format discussion together, it is useful to see that different *roles*
+within a model favor different formats, for reasons that trace directly to their
+statistics and their sensitivity:
+
+| Role | Distribution | Favored format(s) | Why |
+|---|---|---|---|
+| Weights | Bell-shaped, static, symmetric | INT4/INT8 per-group, NF4, MXFP4 | Uniform or normal-matched levels; per-group scales; known offline |
+| Activations (forward) | Outlier-prone, dynamic | FP8 E4M3, INT8+SmoothQuant | Exponent absorbs outliers; per-token dynamic range |
+| Gradients (training) | Very wide dynamic range | BF16, FP8 E5M2 | Range over precision; stochastic rounding in accumulate |
+| Accumulator | Sum of many products | INT32, FP32 | Must not overflow the reduction |
+| KV cache | Keys outlier-prone, values mild | INT8/INT4 (per-ch keys, per-tok values), FP8 | Asymmetric handling; error compounds |
+| Embeddings / LM head | Large, sensitive | INT8 or FP16 (kept higher) | Directly touch vocabulary; sensitive |
+
+This role-based view is the most useful practical framing of the whole section: rather
+than asking "what is the best format," ask "what is the best format *for this tensor's
+role, distribution, and sensitivity, on this hardware*." The answer is almost always a
+*mixture* — low-bit integer or MXFP4 for the bulk of the weights, a float format for
+outlier-prone activations, a wider format for the sensitive embeddings and the
+accumulator, and an independently-tuned format for the KV cache. The art of format
+selection is matching each role to its best-fit representation within the constraints
+of what the target silicon can execute, which is precisely the co-design problem the
+next sections develop.
+
 ## Summary
 
 Numeric formats divide into uniform integer types (cheap hardware, uniform
