@@ -510,7 +510,8 @@ well-tooled targets for quantized inference, that INT4 weight-only is the safe c
 standard, and that the Google/LiteRT path (well-supported on both, and especially deeply
 integrated on MediaTek) is an increasingly attractive route to quantized on-device LLMs. MediaTek's
 rise has made the Android on-device-AI landscape a genuine two-horse race, to the ecosystem's
-benefit.
+benefit — and, given MediaTek's uniquely broad price coverage, a two-horse race whose benefits
+reach much further down the global device market than a flagship-only view would suggest.
 
 ## Note on table completeness
 
