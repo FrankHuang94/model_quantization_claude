@@ -471,6 +471,63 @@ the memory budget at the chosen bit-width, which for a phone caps the practical 
 model size, which is why Apple's on-device foundation model is ~3B rather than larger, with the
 Private Cloud Compute tier handling what exceeds the on-device envelope.
 
+## On-device personalization and the adapter strategy
+
+Apple's adapter-based architecture points toward a personalization capability that
+quantization uniquely enables. Because the base model is quantized and frozen, and behavior
+is specialized through small LoRA adapters, the architecture is naturally suited to
+**on-device personalization**: adapters can, in principle, be trained or refined on a user's
+own data locally (using MLX's on-device fine-tuning), producing a model specialized to the
+individual without that data ever leaving the device. This is the on-device-personalization
+thesis of Section 05 realized on Apple's stack, and it aligns tightly with Apple's privacy
+positioning — a model that adapts to the user while keeping data local is a differentiated
+capability that Apple's whole-stack control and quantization-enabled small resident model make
+feasible. Whether and how far Apple pushes user-specific on-device adapter training is a
+forward question (⚠️ speculative), but the architecture is built for it, and quantization is
+the enabler: only because the base model is compressed to fit in memory is there room to also
+train and store personal adapters on-device. The adapter approach also solves a deployment
+problem — updating one small adapter is far cheaper than reshipping a multi-gigabyte model —
+which matters for a platform that must update features across a huge installed base.
+
+## Why on-device AI is strategic for Apple
+
+Apple's heavy investment in quantization and on-device AI is not incidental; it serves several
+strategic priorities that explain the whole-stack commitment. **Privacy** is central to
+Apple's brand, and on-device inference (enabled by quantization fitting models on the device)
+keeps user data local, a genuine differentiator that Private Cloud Compute extends even to the
+cloud tier. **Latency and offline capability** — on-device models respond instantly and work
+without connectivity, a better user experience for many features. **Cost** — running inference
+on the user's device rather than Apple's servers shifts the compute cost to hardware the user
+already paid for, avoiding the per-query server cost that cloud-AI competitors bear at scale.
+And **differentiation** — Apple's silicon and integration let it offer on-device capabilities
+competitors relying on cloud AI cannot match. Quantization is the technical linchpin of all
+four: it is what makes capable models fit on the device, and thus what makes the privacy,
+latency, cost, and differentiation benefits achievable. This strategic alignment is why Apple's
+quantization investment is deep and sustained rather than opportunistic, and why the whole-stack
+co-design — silicon, tooling, models — is worth the enormous engineering cost to Apple. For the
+competitive landscape, it means Apple is committed to pushing on-device quantization forward as
+a matter of strategy, not just engineering convenience.
+
+## Limitations and criticisms
+
+A balanced account notes the genuine limitations of Apple's approach. The **opacity** is the
+most-cited: developers and analysts cannot verify Apple's performance claims, cannot reason
+precisely about ANE precision support, and must optimize by measurement — a real friction and
+a barrier to the kind of open benchmarking that clarifies the Android silicon landscape. The
+**abstraction** cuts both ways: convenient for typical developers, constraining for those who
+need low-level control (some turn to MLX or llama.cpp precisely to escape Core ML's
+compiler-decides-placement model). Apple's **disclosed aggressive-format support lags** the
+Android flagships (no public INT2/FP4 story), and while this may reflect non-disclosure rather
+than absence, it means Apple cannot be credited with capabilities it does not document. The
+**palettization-vs-linear split** and the ANE-vs-GPU placement complexity add real decision
+burden. And Apple Intelligence's **on-device model capability**, bounded by what fits in phone
+memory even at aggressive quantization, is limited relative to frontier cloud models — the
+~3B on-device tier handles many tasks but leans on the server tier for hard ones, so
+quantization enables but also bounds the on-device experience. These are not fatal criticisms —
+Apple's stack demonstrably works at scale — but they are the honest other side of the
+whole-stack, opaque, ship-the-model strategy, and they matter for anyone evaluating Apple's
+platform against the more open, more disclosed alternatives.
+
 ## Master database contributions
 
 This section contributes the following entities to the master database (Section 16): Apple
