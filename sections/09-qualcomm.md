@@ -564,7 +564,11 @@ the practical precision targets — extends across the entire edge-AI landscape.
 
 This section contributes: Qualcomm (chipmaker, Hexagon NPU), AIMET (framework/PTQ+QAT tool),
 AI Engine Direct/QNN (framework/compiler), Qualcomm AI Hub (framework), and Qualcomm AI Research
-(research-lab) — see Section 16.
+(research-lab) — see Section 16. Note that Qualcomm AI Research appears in both this section and
+the academic-landscape section (12), reflecting its unusual dual role as both an industrial
+silicon vendor's research arm and a primary source of foundational quantization technique — a
+duality that itself illustrates the blurring of the industry-academia boundary that Section 12
+develops as a theme.
 
 ---
 
