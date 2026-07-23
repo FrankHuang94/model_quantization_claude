@@ -418,6 +418,49 @@ the healthy duopoly ensures that both of the dominant Android SoC families suppo
 quantization schemes well, which stabilizes INT4 weight-only as the cross-vendor on-device-LLM
 standard and gives model authors two large, well-tooled targets rather than one.
 
+## The NVIDIA partnership and premium ambitions
+
+A notable strategic development is MediaTek's collaboration with NVIDIA, spanning automotive
+(where the two have partnered on in-vehicle AI platforms combining MediaTek SoCs with NVIDIA
+GPU/AI technology) and, reportedly, efforts toward AI PC and premium computing silicon. For the
+quantization story, this partnership is significant because it potentially brings NVIDIA's
+mature quantization and AI software ecosystem (TensorRT, the CUDA quantization stack, FP8/FP4
+expertise from the data center) into contact with MediaTek's edge silicon. NVIDIA is the
+industry's quantization-tooling leader (Section 11), and any deep collaboration could uplift the
+software side of MediaTek's stack — its historical relative weakness. The automotive context is
+particularly quantization-relevant: in-vehicle AI (perception, in-cabin assistants) runs under
+strict power, latency, and safety constraints where quantization is essential, and combining
+MediaTek's efficient edge silicon with NVIDIA's AI software and quantization expertise targets
+exactly that. While the full scope and outcomes of the partnership are still developing
+(⚠️ forward-looking), it signals MediaTek's ambitions beyond mid-range mobile into premium and
+automotive AI, potentially with NVIDIA's quantization ecosystem as a force-multiplier for
+MediaTek's traditionally weaker software side. This is a development worth watching, as it could
+reshape MediaTek's quantization-tooling position from fast-follower to something stronger by
+borrowing NVIDIA's software maturity.
+
+## Summary
+
+MediaTek's quantization story is that of a successful fast-follower that has reached genuine
+parity with Qualcomm on the production-relevant precisions (INT4/INT8) and on-device-LLM
+capability, while differentiating through ecosystem integration rather than proprietary tooling
+depth. Its APU evolved a hardware transformer accelerator and on-device-LLM systems features
+(speculative decoding, efficient KV cache) in step with the generative-AI shift; its NeuroPilot
+and Gen-AI SDK provide competent quantization and deployment; and its standout move — the deep
+LiteRT–NeuroPilot integration making Dimensity a first-class target for Google's on-device-LLM
+stack — arguably offers a smoother path to quantized on-device LLMs than a proprietary
+alternative, leveraging Google's platform influence. MediaTek's enormous volume, especially in
+the mid-range, extends quantized on-device AI down the price curve to billions of users, a
+democratization role of underappreciated real-world impact. The honest gaps relative to Qualcomm
+— less quantization research pedigree, historically thinner proprietary tooling, no disclosed
+INT2, thinner disclosure — are real but narrowing, and MediaTek's strategy of aligning with
+Google's ecosystem and (increasingly) partnering with NVIDIA is a sensible way to compete. The
+net is a healthy Android SoC duopoly in which both dominant vendors support the standard
+quantization schemes well, stabilizing INT4 weight-only as the cross-vendor on-device-LLM
+standard and giving the ecosystem two large, well-tooled targets. For a very large fraction of
+the world's smartphones, MediaTek's APU and its quantization stack are the on-device-AI
+substrate, making MediaTek a consequential player in the practical quantization landscape even
+where it trails on the research and disclosed-format frontiers.
+
 ## Note on table completeness
 
 MediaTek discloses less generation-by-generation precision detail than Qualcomm, so the APU
