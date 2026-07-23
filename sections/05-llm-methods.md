@@ -828,7 +828,14 @@ plus KV-cache quantization is the on-device default; W8A8/FP8 (SmoothQuant/FP8) 
 compute-bound server choice; and sub-4-bit (QuIP#/AQLM) is the memory-forced frontier.
 The next section turns from the algorithms to the silicon and compilers that must
 execute them — the hardware–software co-design that determines which of these methods
-actually run fast on a given device.
+actually run fast on a given device. It is worth restating the section's central
+discipline one last time: choose the bit-width from the memory budget, choose the method
+from the bit-width and the available kernels, add KV-cache quantization for long context,
+keep the sensitive embedding and output layers higher, and — above all — validate the
+result on the actual deployment task rather than trusting perplexity or a paper's headline
+number. Follow that discipline and the intimidating method zoo becomes a short, reliable
+checklist; ignore it and even the best-published method can ship a silently degraded
+model.
 
 ---
 
