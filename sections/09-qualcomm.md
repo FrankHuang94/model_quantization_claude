@@ -193,7 +193,12 @@ research-backed tooling (AIMET implementing Qualcomm's own DFQ/AdaRound), a laye
 stack (QNN for performance, AI Hub for accessibility), demonstrated on-device generative AI
 (diffusion and LLMs), extension to the PC market (Snapdragon X / Copilot+), and the unmatched
 research-silicon-tooling loop via Qualcomm AI Research. Qualcomm is the mobile quantization
-breadth leader on nearly every axis.
+breadth leader on nearly every axis. Crucially, these strengths reinforce one another: the
+research produces the techniques, the techniques inform the silicon's precision and execution
+design, the silicon's capabilities are exposed through tooling that ships those same techniques,
+and the broad OEM installed base makes the resulting schemes de-facto industry targets — a
+compounding advantage no competitor fully replicates, and the reason Qualcomm's leadership in
+mobile quantization is structural rather than a matter of any single product generation.
 
 **Gaps.** The tooling, while powerful, has a steeper learning curve than the desktop
 ecosystems (QNN is lower-level than, say, Core ML's abstraction), which is part of why AI Hub
