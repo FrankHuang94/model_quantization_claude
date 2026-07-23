@@ -28,6 +28,16 @@ and Google lead on tooling and openness; ARM leads on market reach (its IP is ev
 scores lower on tooling depth; and the others occupy distinct niches. No single player dominates
 all dimensions, which is the multipolar reality.
 
+A note on reading the seven subsections that follow: each is organized around the same three questions
+— what silicon does the player ship, what quantization tooling does it provide, and what is its
+distinctive stance or bet — so they can be compared directly. Throughout, the confidence discipline of
+the earlier vendor sections applies: disclosed precision support and open tooling are treated as
+solid, while vendor throughput claims (TOPS), unreleased-silicon capabilities, and the internals of
+less-transparent players (Samsung, Huawei) carry the appropriate flags. The goal is not to rank the
+players on a single axis — the multipolar landscape resists that — but to map each one's genuine
+contribution to the quantization ecosystem, so a reader can locate any given edge-AI deployment target
+within the broader picture and understand what quantization support it actually offers.
+
 ## Samsung — Exynos NPU and Galaxy AI
 
 **Silicon.** Samsung is unusual as both a chipmaker (Exynos SoCs, with an integrated NPU) and a
