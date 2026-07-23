@@ -663,6 +663,29 @@ accept some per-device performance loss versus vendor-specific optimization, and
 specific tuning for the highest-value targets — a pragmatic accommodation to the multipolar reality
 that trades peak performance for reach.
 
+## Mobileye: the automotive-vision quantization specialist
+
+Mobileye (an Intel-affiliated company) warrants a brief standalone note as a quantization-intensive
+specialist that most surveys overlook. Mobileye designs the **EyeQ** family of automotive vision
+SoCs that power ADAS and autonomous-driving perception in a large fraction of the world's cars, and
+its business depends fundamentally on running sophisticated perception neural networks at low power
+and low cost within the car — which means heavily-quantized inference. Mobileye has decades of
+expertise in quantizing vision networks for automotive-grade reliability, running them at INT8 (and
+lower where safe) on its custom EyeQ silicon with the safety validation that automotive demands. This
+is a distinctive and under-appreciated corner of the quantization world: unlike the consumer players
+racing to the aggressive-format frontier, Mobileye's priority is *reliable, validated, cost-efficient*
+quantized vision at automotive scale, where a quantization-induced failure on a rare object could have
+safety consequences (the fairness/rare-case concern of Section 07 in its most consequential form).
+Mobileye's approach — conservative, exhaustively-validated quantization on purpose-built silicon — is
+a model for safety-critical quantized deployment, and it represents one of the largest-volume
+deployments of quantized vision inference in the world by virtue of the number of vehicles running
+EyeQ chips. Its inclusion rounds out the picture that the quantization landscape extends well beyond
+the consumer LLM-and-phone race into safety-critical automotive perception, where the discipline and
+priorities are different but the reliance on quantization is just as total. Mobileye is a reminder
+that some of the most demanding and highest-stakes quantized-inference deployments happen not in the
+visible consumer-AI arena but in the automotive-perception domain, on custom silicon, under
+constraints that make the consumer players' aggressive-quantization instincts inappropriate.
+
 ## Synthesis: the multipolar quantization landscape
 
 Across all ten players (these seven plus Apple/Qualcomm/MediaTek), several patterns hold. **INT8
@@ -680,6 +703,26 @@ consequence is a fragmented target landscape unified only by the common INT8/INT
 is precisely why the standardization efforts of Section 15 (ONNX, MX formats, MLIR) matter, and
 why the co-design discipline of Section 06 (validate on the actual target) is essential across
 such a diverse set of silicon and tooling.
+
+Two further observations complete the synthesis. First, the landscape exhibits a clear **division of
+labor between silicon leaders and tooling leaders**: the mobile-SoC vendors (Qualcomm, Apple,
+MediaTek, Samsung, Google-Tensor, Huawei) lead in shipped consumer silicon volume, while the
+tooling-and-format leaders (NVIDIA, Intel, Google-LiteRT) lead in the software and formats that
+define how quantization is done — and these two groups only partially overlap, with NVIDIA the rare
+leader on both (in its data-center-adjacent domain) and Google unusual in leading on tooling (LiteRT)
+while shipping modest silicon. This division means advancing the state of quantization requires both
+the silicon vendors' hardware and the tooling vendors' software: the format leaders pull the frontier
+forward, and the volume vendors follow with mass deployment. Second, the landscape is **converging on
+shared formats even as it stays multipolar on implementation**: the OCP microscaling formats, backed
+by nearly all these players jointly (Section 04), are a rare point of cross-vendor agreement, and they
+suggest that while the silicon and tooling will remain multipolar, the numeric formats may consolidate
+— which would ease the fragmentation tax and is the most hopeful sign for the developer's cross-vendor
+reality. For the reader, the durable takeaways are that INT8/INT4 is the universal baseline every
+player supports, that tooling leadership and silicon volume are held by different players, that the
+format frontier is led by NVIDIA and the OCP consortium, and that the landscape's diversity is a
+permanent feature reflecting the genuinely varied requirements of edge AI — from tinyML sensors to
+automotive perception to AI PCs to flagship phones — all served by quantization adapted to each
+segment's constraints.
 
 ## Master database contributions
 
