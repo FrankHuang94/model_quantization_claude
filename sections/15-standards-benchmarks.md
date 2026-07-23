@@ -396,6 +396,29 @@ slowly against the competitive frictions — a realistic expectation that temper
 standardization easing the fragmentation tax. The standardization will advance, but unevenly, shaped by
 where the players' incentives align and where they conflict.
 
+## The role of independent evaluation and the community
+
+Filling part of the gap left by incomplete formal benchmarks is a layer of **independent and community
+evaluation** that deserves recognition. Independent technical reviewers, academic groups publishing
+thorough evaluations, and community efforts (the local-LLM community's extensive testing of quantized
+GGUF variants, independent NPU benchmarking by technical press and enthusiasts) provide a check on
+vendor claims where formal benchmarks are absent. The local-LLM community in particular has generated a
+large body of practical, if informal, evaluation of quantized models — comparing k-quant variants,
+measuring quality degradation, sharing configurations — that, while not standardized, provides real
+signal about what quantization schemes work well. Academic papers increasingly include thorough,
+reproducible evaluations that serve as reference points. And independent benchmarking by technical
+publications, while varying in rigor, provides cross-vendor comparison the vendors themselves will not.
+This independent/community layer is imperfect (informal, varying rigor, not standardized) but valuable —
+it is part of why the field is not wholly dependent on vendor claims, and it embodies the open, community
+-driven culture (Section 12) applied to evaluation. The database draws on this layer where it is credible,
+and it is a partial answer to the benchmark gap: in the absence of comprehensive formal benchmarks,
+independent and community evaluation provides real, if imperfect, checks on vendor claims, and
+strengthening this layer (more rigorous community protocols, more independent benchmarking) is a
+complement to the formal-benchmark improvement the field needs. The healthiest evaluation ecosystem
+combines formal standardized benchmarks (MLPerf), reproducible academic evaluation, community testing,
+and independent review — and quantization has all of these in developing form, even if the formal
+standardized-quality-benchmark piece is the weakest.
+
 ## Synthesis
 
 Standards and benchmarks are where quantization is *less* mature than its technical methods, and this
