@@ -178,6 +178,70 @@ navigability.
 | **Calibration set** | The small representative dataset used to set quantization ranges; must match the deployment distribution. |
 | **Group size** | The number of weights sharing a scale in per-group quantization (commonly 128, 64, or 32). |
 
+### LLM-specific and evaluation terms
+
+| Term | Definition |
+|---|---|
+| **W4A16 / W8A8 / W4A4** | Notation for weight/activation bit-widths (e.g. W4A16 = 4-bit weights, 16-bit activations). |
+| **Perplexity** | A language-modeling quality proxy; sensitive to some quantization effects but insensitive to downstream capability loss. |
+| **Rotation / incoherence** | Multiplying weights/activations by orthogonal matrices to spread outlier energy, making distributions easier to quantize (QuIP#, QuaRot, SpinQuant). |
+| **SmoothQuant migration** | Scaling activation channels down and weight channels up to move quantization difficulty from activations to weights. |
+| **Salient weights** | The weights connected to high-magnitude activation channels, which AWQ protects. |
+| **Double quantization** | Quantizing the quantization scales themselves to reduce metadata overhead (QLoRA). |
+| **Speculative decoding** | Using a small draft model to propose tokens verified by the large model, accelerating generation; composes with quantization. |
+| **lm-evaluation-harness** | The de-facto standard tool for evaluating LLM quality (including quantized) across task suites. |
+| **Effective bits** | The true bits-per-weight including scale/metadata overhead, distinct from the nominal bit-width. |
+| **Outlier decomposition** | Computing outlier dimensions in higher precision while the rest run low (LLM.int8()). |
+
+### Standards, benchmarks, and process terms
+
+| Term | Definition |
+|---|---|
+| **MLPerf** | MLCommons' standardized, accuracy-constrained AI benchmark suite (Inference, Mobile, Tiny, Client). |
+| **Accuracy-constrained benchmark** | A benchmark that requires meeting a minimum accuracy, so performance cannot be gained by unmeasured accuracy loss. |
+| **OCP** | Open Compute Project; the consortium that standardized the FP8 and microscaling (MX) formats. |
+| **TOPS** | Tera-operations per second; a peak-throughput figure that is precision-dependent, unachieved in practice, and near-useless for cross-vendor comparison. |
+| **Co-design** | Designing the quantization algorithm, numeric format, compiler, and hardware together rather than in isolation. |
+| **tinyML** | Machine learning on microcontroller-class hardware (kilobytes-to-megabytes, microwatts-to-milliwatts), where quantization is existential. |
+
+## How the reference was constructed
+
+A note on construction, for transparency about the reference's provenance and limits. This database was
+compiled from public sources: vendor specifications and platform briefs (for the chipmaker capabilities),
+SDK and tooling documentation (for the frameworks), peer-reviewed papers and their open-source releases
+(for the methods and research), standards documents (OCP, ONNX, MLPerf), and public reporting (for the
+startups and funding). Fast-moving facts (current-generation silicon, recent startup funding) were
+verified against current sources where possible, and flagged with appropriate confidence where
+verification was incomplete. The reference reflects the state of the field as of its generation date and
+is a *snapshot* — the fast-moving details (frontier-format status, startup funding, latest silicon) will
+age, while the structural analysis (the techniques, the co-design principles, the ecosystem's shape) is
+more durable. The reference's *selection* favors impact and prominence over exhaustive completeness (the
+method, startup, and research landscapes are broader than the representative sets covered), and it has a
+*Western-source bias* that under-represents the Chinese domestic ecosystem (Section 16's limitations note).
+These construction choices — public sources, confidence-flagged, snapshot-in-time, prominence-weighted,
+Western-source-biased — define what the reference is and is not: a comprehensive, honest, usable orientation
+to the field, not a definitive or complete census. Understanding the construction is part of using the
+reference well: trust the structural analysis, treat the fast-moving specifics as a dated snapshot to
+verify, honor the confidence flags, and supplement with current and region-specific sources for the details
+that matter to a given decision.
+
+## The reference's organizing principles
+
+Two organizing principles run through the entire reference and are worth stating explicitly as a reading
+key. First, the **production-versus-frontier distinction**: throughout, the reference distinguishes what is
+deployed at scale (INT8, 4-bit weight-only, the shipping silicon) from what is demonstrated but not yet
+deployable (sub-4-bit, W4A4, native training, novel compute), because conflating them is the field's most
+common error, and the maturity tags encode this distinction on every claim. Second, the **co-design
+thesis**: the reference argues repeatedly that quantization in 2026 is not a pure-software problem but a
+negotiation among the algorithm, the numeric format, the compiler, and the silicon — that the accuracy and
+speed of a quantized model are as much properties of the hardware and tooling as of the quantization method
+— and this thesis structures the treatment of techniques (Sections 03–05), hardware (Section 06), vendors
+(Sections 08–11), and the future (Section 14). A reader who holds these two principles — the
+production-frontier distinction and the co-design thesis — has the interpretive key to the whole reference,
+and the rest is elaboration and evidence. These principles are not incidental framings but the reference's
+core claims about how quantization works and how to think about it, and they are the most important things
+to carry away from the document as a whole.
+
 ## How to cite and use this reference
 
 This reference is a compiled technical database drawing on public specifications, SDK documentation,
