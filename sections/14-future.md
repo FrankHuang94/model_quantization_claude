@@ -446,6 +446,31 @@ be more integrated and automated, optimizing the full stack for a target rather 
 quantization as an isolated step — a more powerful but also more complex approach that the tooling
 evolution will need to support.
 
+## The confidence spectrum of these predictions
+
+Because this section is inherently speculative, it is worth explicitly grading the confidence of its
+main predictions, applying the database's confidence discipline to the forward view. **High confidence**
+(structural forces well-established): the production bit-width floor will keep descending; the solved
+regimes (INT8, 4-bit weight-only) will remain stable and ubiquitous; the co-design trend (quantization
+merging with hardware/architecture) will intensify; energy and cost pressures will keep quantization
+strategically central; multimodal/diffusion edge quantization will mature; and democratization will
+continue. **Medium confidence** (likely but with real uncertainty): MX formats becoming the standard
+sub-8-bit edge numeric; tooling consolidation around standards; automated hardware-aware quantization
+arriving; 3-bit becoming a practical production option; agentic AI driving sustained-inference
+quantization demand. **Low confidence / high uncertainty** (genuine wildcards): quantization-native
+training scaling to change the paradigm; a general 2-bit production floor by 2030; in-memory compute
+mainstreaming; and the specific timing of any of these. This confidence grading is important because it
+distinguishes the well-supported directional claims (the field will keep descending and co-designing)
+from the genuinely uncertain specific predictions (whether 2-bit or native training breaks through). The
+honest forward view leans on the high-confidence structural claims, treats the medium-confidence ones as
+likely-but-watch, and holds the low-confidence wildcards loosely — and it explicitly resists the
+temptation to make confident specific predictions about a fast-moving field where the past decade's
+surprises (the speed of the LLM-quantization wave, the revival of ternary via BitNet) show how
+unpredictable the details are. A reader should take from this section a well-supported sense of
+*direction* and an appropriately humble sense of *specifics*, which is the responsible posture for
+forecasting a field this dynamic. The confidence spectrum is itself a deliverable: knowing which
+predictions are solid and which are speculative is more useful than a list of equally-asserted forecasts.
+
 ## Synthesis
 
 The next 3–5 years of quantization will likely see the production bit-width floor continue descending
