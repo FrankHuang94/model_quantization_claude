@@ -1,0 +1,11 @@
+hardware,INT16,INT8,INT4,INT2,FP16,FP8,FP4
+Qualcomm Hexagon (8 Elite Gen5),2,2,2,1,2,2,1
+Apple Neural Engine (A19/M5),1,2,1,0,2,1,0
+MediaTek APU (D9400),1,2,2,1,2,1,0
+Samsung Exynos NPU,1,2,1,0,2,1,0
+Google Tensor / Edge TPU,0,2,1,0,1,0,0
+NVIDIA Jetson (Orin/Blackwell),1,2,2,0,2,2,2
+Intel NPU (Core Ultra),1,2,2,0,2,1,0
+AMD Ryzen AI (XDNA2),1,2,2,0,2,1,0
+ARM Ethos-U/N NPU,2,2,1,0,1,0,0
+Huawei Ascend/HiAI,1,2,2,0,2,1,0
