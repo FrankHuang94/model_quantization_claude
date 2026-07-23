@@ -28,6 +28,18 @@ INT4 to INT8 and runs the compute at INT8 — the algorithm is identical; the ou
 depends entirely on the hardware/compiler. Understanding this is what separates a
 realistic deployment plan from a spec-sheet fantasy.
 
+This co-design reality also reshapes how the field allocates its research effort. As
+Section 01 noted, the marginal accuracy gains from new quantization *algorithms* have
+shrunk while the gains from better *compilers, native low-bit datapaths, and
+hardware-aligned formats* have grown — which is why so much recent progress lives at the
+algorithm–hardware boundary (microscaling formats that are simultaneously a quantization
+technique and a numeric type, rotation methods designed to fuse into hardware layers,
+KV-cache schemes co-designed with attention kernels). A reader who internalizes only one
+idea from this section should take this one: the interesting questions in quantization are
+increasingly not "what is the cleverest algorithm" but "what does this silicon execute
+natively, and how do I shape the model and scheme to fit it." The vendor roadmaps that
+follow are best read through that lens.
+
 ## Matrix engines: how NPUs and DSPs execute quantized math
 
 The heart of every AI accelerator is a **matrix engine** — hardware specialized for the
