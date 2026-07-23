@@ -267,6 +267,20 @@ provisional; but the centrality of quantization to efficient, accessible, on-dev
 claim in this document. That is the reason this database exists, and the reason its subject will remain
 worth tracking for years to come.
 
+For the reader who has reached this point: the seventeen sections are designed to be consulted as much as
+read, via the master database (Section 16) as an index and the confidence tags as a guide to weight. The
+foundational sections (02–07) explain how quantization works and why; the vendor sections (08–11) map who
+provides what silicon and tooling; the ecosystem sections (12–13) cover the research and commercial
+landscapes; the forward sections (14–15) address where the field is heading and how it is measured; and
+this appendix provides the apparatus to read all of it precisely. Whether the reader's need is a
+procurement decision, a method choice, a research orientation, an investment thesis, or simply an
+understanding of a field that has become central to how AI reaches the world's devices, the reference aims
+to serve it — honestly about what is known and what is not, comprehensively across the landscape, and
+usably through its structure and tags. The field will keep moving, and this snapshot will age in its
+specifics, but the map it draws of quantization's principles, players, and trajectory is meant to orient
+anyone entering or navigating the space for as long as the fundamental problem — models larger than their
+hardware — endures.
+
 ---
 
 *End of reference. Return to the [README](../README.md) and [table of contents](../README.md#table-of-contents).*
