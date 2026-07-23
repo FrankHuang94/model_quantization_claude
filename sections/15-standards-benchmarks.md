@@ -459,7 +459,12 @@ for measuring the actual deployment on the actual target.
 
 This section contributes standard/benchmark entities to the master database (Section 16): MLPerf /
 MLCommons, ONNX (quantization representation), OCP MX formats (added in Section 04), and lm-evaluation-
-harness — see Section 16.
+harness — see Section 16. These benchmark and standard entities, categorized as such in the master
+database, complete the entity taxonomy: alongside the chipmakers, frameworks, methods, research labs,
+and startups, the standards and benchmarks are the infrastructure that makes quantized-model
+interoperability and credible comparison possible, and their inclusion reflects that a full map of the
+quantization ecosystem must account for the measurement and interoperability layer, not only the
+technology and the players.
 
 ---
 
