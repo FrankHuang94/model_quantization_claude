@@ -613,7 +613,12 @@ implementations — is maturing, moving the field from a collection of methods t
 discipline. The single most important structural fact remains the tight research-to-production coupling
 enabled by the open-source, open-model dynamic: nowhere else in ML does a paper become deployed tooling
 so fast, which makes the leading quantization researchers unusually consequential and makes tracking
-their work the surest way to see the future of on-device and cost-efficient AI. The field's trajectory
+their work the surest way to see the future of on-device and cost-efficient AI. This is why a technical reference like this database devotes a full
+section to the research landscape rather than treating it as background: the research groups are not
+merely the historical source of today's methods but the active leading indicator of tomorrow's deployed
+capabilities, and their agenda — sub-4-bit accuracy, fast low-bit kernels, quantization-native training,
+new modalities — is a preview of what edge and cost-efficient AI will be able to do in the coming years.
+The field's trajectory
 — from a deployment-engineering niche to a central, globally-distributed, industry-entangled ML research
 area — reflects quantization's rise to strategic centrality, and its continued vitality is assured by the
 permanence of the resource constraints (memory, energy, cost) that make quantization indispensable. As
