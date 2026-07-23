@@ -26,3 +26,13 @@ Qualcomm AI Hub,framework,inference-runtime,auto-optimize + compile for Snapdrag
 Qualcomm AI Research,research-lab,academic,PTQ technique invention,INT4;INT8;low-bit,production-shipped,Invented DFQ and AdaRound,DFQ/AdaRound papers,paper,09;12;16
 MediaTek,chipmaker,mobile-soc,APU + transformer accelerator,INT4;INT8;INT16;FP16;FP8,production-shipped,Silicon parity + deep LiteRT integration,Dimensity 9500 APU,official-spec,10;16
 NeuroPilot,framework,ptq-tool,INT8/INT4 quant + Gen-AI SDK,INT4;INT8,production-shipped,APU deployment + LLM optimization,NeuroPilot Gen-AI SDK,sdk-docs,10;16
+Samsung,chipmaker,mobile-soc,Exynos NPU + PIM research,INT8;INT4;FP16,production-shipped,Vertical integration silicon+memory+devices,Galaxy AI + Exynos NPU,inferred,11;16
+Google,chipmaker,mobile-soc,Tensor SoC + Edge TPU INT8,INT8;INT4,production-shipped,Reference toolchain + on-device models,Tensor G-series + Gemini Nano,official-spec;inferred,11;16
+LiteRT (TFLite),framework,inference-runtime,reference mobile quant toolchain,INT8;INT4,production-shipped,Defined mobile quantization; delegate arch,LiteRT / LiteRT-LM,sdk-docs,11;16
+NVIDIA,chipmaker,edge-npu,Jetson GPU+tensor FP4/FP8,INT8;INT4;FP8;FP4,production-shipped,Tooling + format leader,Jetson + TensorRT,official-spec,11;16
+TensorRT / TensorRT-LLM,framework,inference-runtime,most mature quant inference stack,INT8;INT4;FP8;FP4,production-shipped,Reference performance toolchain,TensorRT-LLM,sdk-docs,11;16
+Intel,chipmaker,edge-npu,Core Ultra NPU + OpenVINO,INT8;INT4;FP8,production-shipped,Open portable tooling; runtime-decides,Core Ultra NPU5 + OpenVINO,official-spec,11;16
+OpenVINO / Neural Compressor,framework,ptq-tool,cross-hardware quant toolkit,INT8;INT4;FP8,production-shipped,Open framework-agnostic quantization,OpenVINO NNCF + Neural Compressor,sdk-docs,11;16
+AMD,chipmaker,edge-npu,Ryzen AI XDNA2 Block FP16,INT4;INT8;BF16;BlockFP16,production-shipped,Block FP16 bet + transformer HW primitives,Ryzen AI 300 XDNA2,official-spec,11;16
+ARM,ip-vendor,edge-npu,Ethos IP + KleidiAI integer kernels,INT8;INT4,production-shipped,Ubiquitous integer IP across edge,Ethos-U/N + KleidiAI + CMSIS-NN,sdk-docs,11;16
+Huawei,chipmaker,mobile-soc,DaVinci NPU + Ascend,INT8;INT4;FP16,production-shipped,Vertically integrated; China domestic,Ascend + Kirin DaVinci + MindSpore,inferred,11;16
