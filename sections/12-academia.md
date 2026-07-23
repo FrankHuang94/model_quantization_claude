@@ -553,6 +553,33 @@ by organizing the sprawling method landscape into coherent taxonomies, they have
 learnable and have provided the conceptual scaffolding (the design axes of Section 03) that structures
 how practitioners and researchers think about quantization.
 
+## Relationship to the broader ML research community
+
+Quantization research's relationship to the broader machine-learning research community has evolved
+markedly, and understanding this evolution contextualizes the field's current prominence. For much of
+deep learning's history, quantization was a niche, somewhat unglamorous corner of ML research — important
+for deployment but peripheral to the field's main narrative of scaling and capability. The LLM era
+changed this dramatically: as models grew too large to run without compression, quantization moved from
+the periphery to a strategically central position, because it became the technology that determines
+whether a given model can be deployed at all (on-device) or served cost-effectively (in the cloud). This
+elevation drew talent and attention into the field — researchers who might previously have worked on
+architecture or training turned to quantization because it was where a large, unsolved, high-impact
+problem lay. The field now sits at the intersection of several ML research communities: the LLM/NLP
+community (which needs quantization to deploy its models), the ML-systems community (which builds the
+kernels and compilers), the computer-architecture community (which designs the hardware), and the
+classical efficient-ML community (pruning, distillation, NAS). This intersectional position is a source
+of the field's vitality — it draws ideas and people from multiple communities — but it also means
+quantization researchers must be conversant across these areas, which shapes who succeeds. The field's
+rising prominence is reflected in the increasing number of quantization papers at the top ML venues, the
+prominence of quantization methods in the LLM deployment discourse, and the commercial investment in the
+field. Quantization has, in short, graduated from a deployment-engineering niche to a central ML research
+area, and its practitioners are now among the more influential in applied ML, because their work
+determines what AI can actually be deployed and at what cost — a position of leverage the field did not
+have a decade ago. This trajectory — from niche to central — mirrors the broader shift in ML from a focus
+purely on capability (bigger models, better accuracy) to a focus that also weights efficiency and
+deployability, a shift the resource constraints of the LLM era forced and that quantization research is at
+the heart of.
+
 ## Synthesis
 
 The quantization research landscape is a small, fast-moving, high-impact field where the industry-
