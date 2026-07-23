@@ -771,6 +771,29 @@ redundancy runs out, after which further compression by any method degrades the 
 Co-design of the whole compression stack (which Section 06 and Section 14 develop) is
 therefore more powerful than optimizing any single technique in isolation.
 
+## Quantization sensitivity across model families
+
+The same techniques behave differently across architectures, and knowing the
+family-specific quirks saves debugging time. **Convolutional vision models** are the
+most quantization-friendly: local receptive fields, batch normalization, and ReLU
+give them well-behaved activation ranges, and INT8 PTQ is near-lossless, with the
+main caveat being depthwise-separable layers that demand per-channel scales.
+**Recurrent models (RNN/LSTM/GRU)** are harder because state recirculates through
+time, so quantization error accumulates across timesteps and can drift; they usually
+need higher activation precision or careful state-range handling. **Transformers**
+are size-dependent: small ones quantize like CNNs, but past a few billion parameters
+the emergent activation outliers (Section 02) dominate and demand outlier handling
+for any activation quantization. **Diffusion models** (image/video generation) are an
+active frontier — they run the same network dozens of times over denoising steps, so
+per-step quantization error compounds visibly in the output, and the noise-prediction
+network is sensitive to timestep-conditioned activation ranges; INT8 is workable with
+care, sub-8-bit is research-stage, and the field is only beginning to develop
+diffusion-specific calibration (Section 14). **Mixture-of-Experts** models add the
+wrinkle that different experts see different token distributions, complicating shared
+calibration. The practical guidance: start from the family's known behavior — CNNs
+tolerate aggression, large transformers need outlier handling, recurrent and diffusion
+models need per-step/per-state care — rather than applying a one-size scheme blindly.
+
 ## Summary
 
 The theory of quantization reduces to a handful of orthogonal choices — the affine
