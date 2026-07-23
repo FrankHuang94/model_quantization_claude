@@ -64,3 +64,30 @@ MLPerf / MLCommons,benchmark,benchmark,accuracy-constrained inference benchmark,
 ONNX (quantization spec),standard,exchange,QDQ/QOperator quant representation,INT8;INT4,production-shipped,Cross-vendor quantized-model exchange,ONNX quant spec,sdk-docs,15;16
 OCP MX formats,standard,numeric,microscaling block-FP standard,MXFP4;MXFP8;MXINT8,sdk-limited,Cross-vendor sub-8-bit format standard,OCP Microscaling spec,official-spec,04;15;16
 lm-evaluation-harness,benchmark,benchmark,LLM quality/accuracy evaluation,any,production-shipped,De-facto LLM accuracy eval,EleutherAI harness,sdk-docs,15;16
+AdaRound,method,ptq-tool,learned rounding PTQ,INT4;INT8,production-shipped,Optimize output error not weight error,AdaRound (Qualcomm),paper,02;03;16
+Data-Free Quantization (DFQ),method,ptq-tool,cross-layer equalization + bias correction,INT8,production-shipped,Calibration-free INT8,DFQ (Qualcomm),paper,02;03;16
+LSQ,method,qat-tool,learnable step size QAT,low-bit,production-shipped,Learnable quantization step,LSQ,paper,02;03;16
+BRECQ,method,ptq-tool,block reconstruction PTQ,INT4,sdk-limited,Block-wise reconstruction for INT4,BRECQ,paper,02;16
+ZeroQuant,method,llm-quant,per-token dynamic + group + distill,W8A8;W4,sdk-limited,DeepSpeed serving quantization,ZeroQuant (MS),paper,02;05;16
+HAWQ,method,ptq-tool,Hessian-aware mixed precision,mixed,sdk-limited,Curvature-based bit allocation,HAWQ (Berkeley),paper,03;12;16
+SqueezeLLM,method,llm-quant,dense-and-sparse LLM quant,W3;W4,sdk-limited,Sensitivity-based non-uniform,SqueezeLLM (Berkeley),paper,05;12;16
+I-BERT,method,llm-quant,integer-only transformer inference,INT8,sdk-limited,Integer GELU/softmax/layernorm,I-BERT,paper,02;03;16
+Deep Compression,method,compression,prune+codebook quant+huffman,codebook,research-only,Foundational compression pipeline,Deep Compression (Han),paper,02;16
+XNOR-Net,method,binary,binary weights+activations,binary,research-only,ImageNet-scale binary net,XNOR-Net,paper,02;16
+BinaryConnect,method,binary,binary weights + STE,binary,research-only,Introduced straight-through estimator,BinaryConnect,paper,02;16
+bitsandbytes,framework,inference-runtime,INT8/NF4 drop-in for transformers,INT8;NF4,production-shipped,Accessible LLM quantization library,bitsandbytes,sdk-docs,05;16
+llama.cpp,framework,inference-runtime,CPU/Metal GGUF inference,2-8 bit,production-shipped,Dominant local-LLM runtime,llama.cpp,sdk-docs,05;16
+vLLM,framework,inference-runtime,high-throughput quantized serving,W4;W8A8;FP8,production-shipped,GPTQ/AWQ/FP8 serving kernels,vLLM,sdk-docs,05;16
+ExecuTorch,framework,inference-runtime,PyTorch edge deployment,INT8;INT4,production-shipped,PyTorch-native edge quantization,ExecuTorch (Meta),sdk-docs,06;11;16
+Apache TVM,framework,compiler,cross-vendor quant compiler,INT8;INT4,production-shipped,BYOC autotuned quantization,TVM,sdk-docs,06;16
+ONNX Runtime,framework,inference-runtime,portable quantized execution,INT8;INT4,production-shipped,Execution-provider quant deployment,ONNX Runtime,sdk-docs,06;16
+MLC-LLM,framework,inference-runtime,cross-platform LLM deployment,W4,production-shipped,TVM-based universal LLM deploy,MLC-LLM,sdk-docs,06;16
+Marlin,method,inference-runtime,fast 4-bit GPU kernels,W4A16,production-shipped,Near-optimal 4-bit matmul kernels,Marlin (IST Austria),sdk-docs,05;16
+Mobileye,chipmaker,automotive,quantized automotive perception,INT8,production-shipped,Safety-critical quantized vision,EyeQ SoCs,inferred,11;16
+Together AI,startup,inference-runtime,cost-efficient LLM inference service,W4;FP8,production-shipped,Quantized inference-as-a-service,Together inference,press,13;16
+Fireworks AI,startup,inference-runtime,fast LLM inference service,W4;FP8,production-shipped,Quantized serving optimization,Fireworks,press,13;16
+Untether AI,startup,inference-chip,at-memory compute,low-bit,research-only,At-memory acceleration (to AMD),runAI,press,13;16
+Mythic,startup,inference-chip,analog compute-in-memory,low-bit analog,research-only,Analog CIM pioneer (struggled),M-series,press,13;16
+KAIST / SNU groups,research-lab,academic,LLM outlier + quantization,W4;low-bit,production-shipped,Korean LLM-quant research,outlier-handling papers,paper,12;16
+Tsinghua (KIVI et al.),research-lab,academic,KV-cache + efficient LLM quant,KV 2-bit,sdk-limited,KV-cache quantization,KIVI,paper,12;16
+Embedl,startup,compression-sw,embedded model optimization,INT8;INT4,production-shipped,Embedded/edge deployment optimization,Embedl SDK,press,13;16
