@@ -516,6 +516,15 @@ This section contributes: MediaTek (chipmaker, APU), NeuroPilot / Gen-AI SDK (fr
 the LiteRT–NeuroPilot integration (noted under LiteRT in Section 11's Google discussion and the
 master table) — see Section 16.
 
+The MediaTek entry in the master database is tagged production-shipped with official-spec
+confidence for the core INT4/INT8 support (well-documented in platform materials and validated by
+the numerous on-device-LLM demonstrations), and with lower confidence for the newest FP8 support
+and the vendor/partner-reported throughput figures, which await independent verification. This
+mixed confidence profile is typical of the vendor sections: the production-relevant capabilities
+are solid, while the frontier formats and the headline performance numbers carry the flags that
+the database's methodology (Section 17) prescribes for vendor claims not yet independently
+corroborated.
+
 ---
 
 *Next: [11 — Other Major Players](./11-other-players.md).*
