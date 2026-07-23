@@ -277,6 +277,201 @@ memory payoff is so direct and its accuracy cost, with proper key/value handling
 small. The practical configuration for an on-device long-context LLM is now often
 "W4A16 weights + INT4 or INT8 KV cache," with the two tuned independently.
 
+## The outlier problem in LLMs, concretely
+
+Because so many of these methods are outlier responses, it is worth characterizing the
+LLM outlier phenomenon precisely, as it manifests differently than in CNNs. Three
+distinct outlier structures appear in large transformers, and different methods target
+different ones:
+
+1. **Emergent activation-channel outliers.** Past roughly 6–7B parameters, specific
+   *feature dimensions* of the hidden state develop magnitudes 10–100× the median,
+   consistently across tokens and layers. These are the outliers LLM.int8() discovered
+   and SmoothQuant migrates. They are systematic (the same few channels), which is what
+   makes offline migration/protection possible.
+2. **Token-wise activation variation.** Different *tokens* have different overall
+   activation scales — a rare token or a delimiter can spike the whole vector. This is
+   why per-token dynamic activation quantization is preferred over static: the range is
+   set per token, absorbing the variation.
+3. **Weight outliers.** A small fraction of *weights* are much larger than the rest and
+   carry disproportionate importance; SpQR isolates these into a sparse high-precision
+   channel, and AWQ protects the weights connected to high-activation channels.
+
+The rotation methods (QuIP#, QuaRot, SpinQuant) are powerful precisely because they
+attack the *geometric root* of the problem: an orthogonal transform redistributes the
+concentrated outlier energy across all dimensions, so *all three* structures flatten
+simultaneously. This is why rotation is the current frontier — it is a more fundamental
+remedy than per-channel migration, which handles only the systematic channel outliers.
+The intuition for *why* rotation works: outliers represent energy concentrated in a few
+coordinates; a random rotation is, with high probability, "incoherent" with any sparse
+concentration, so it spreads that energy into a dense, near-Gaussian distribution whose
+maximum is far smaller — and a smaller maximum means a finer quantization step for the
+same bit budget (Section 03's SQNR argument). The rotations are chosen from structured
+families (Hadamard matrices, which are `±1` and computable in `O(n log n)` without
+storing the matrix) so they fuse into adjacent linear layers and cost essentially
+nothing at inference.
+
+## GPTQ versus AWQ: a detailed comparison
+
+Because GPTQ and AWQ are the two methods a practitioner most often chooses between, a
+direct comparison is worthwhile. They reach similar 4-bit accuracy by different routes,
+with different practical properties.
+
+**Mechanism.** GPTQ is *corrective*: it quantizes weights and compensates the resulting
+error in the remaining weights using second-order (Hessian) information, an inherently
+sequential, per-layer optimization. AWQ is *preventive*: it finds a per-channel scaling
+that reduces the error of the important channels *before* quantizing, then quantizes
+uniformly with simple round-to-nearest. GPTQ optimizes after the fact; AWQ conditions
+the problem beforehand.
+
+**Calibration sensitivity.** GPTQ's Hessian is computed from calibration activations, so
+it is more sensitive to the calibration set's representativeness; a mismatched
+calibration set can bias the compensation. AWQ's scaling search is more robust to
+calibration choice, which is part of why AWQ is often preferred for instruction-tuned
+and multimodal models where the "right" calibration distribution is unclear.
+
+**Kernel friendliness.** GPTQ's optional activation-order (desc_act) reordering improves
+accuracy but permutes weights, complicating kernels and memory layout. AWQ does no
+reordering, producing a clean layout that maps directly to fast kernels (and AWQ ships
+with its own optimized kernels). For a fixed kernel budget, AWQ's simplicity is an
+advantage.
+
+**Speed of quantization.** Both are fast (minutes to a couple of GPU-hours for large
+models). GPTQ's sequential Hessian updates are somewhat heavier; AWQ's scaling search is
+light.
+
+**Accuracy.** In aggregate benchmarks they are close at 4-bit per-group; AWQ often edges
+ahead on instruction-following and multimodal, GPTQ sometimes on pure perplexity. The
+honest summary is that at W4 g=128 the difference is small and model-dependent, and the
+decision usually turns on kernel/tooling fit and calibration convenience rather than a
+decisive accuracy gap. Many teams simply try both and keep whichever validates better on
+their task.
+
+## Group size, act-order, and the knobs that matter
+
+The named methods share a set of practical knobs whose settings materially affect the
+accuracy/size tradeoff, and understanding them prevents most "my quantized model is bad"
+problems:
+
+- **Group size** (Section 03): smaller groups (g=64, g=32) improve accuracy at the cost
+  of more scale overhead. g=128 is the standard default; drop to g=64/32 for accuracy-
+  critical or lower-bit quantization, understanding the effective-bit inflation.
+- **Activation order (act-order / desc_act)** in GPTQ: quantizing columns in order of
+  decreasing activation importance improves accuracy but complicates kernels. A common
+  choice is to enable it for accuracy and use a kernel that supports it.
+- **Symmetric vs. asymmetric**: weight-only methods usually use asymmetric (with a
+  per-group zero-point) for accuracy; some kernels prefer symmetric for speed.
+- **Protected layers**: keeping the embedding, LM head, and sometimes the first/last
+  blocks at 8-bit (or FP16) recovers accuracy at small size cost — a near-universal best
+  practice.
+- **Calibration set**: size (128–512 sequences is typical) and, more importantly,
+  *distribution* — it should match the deployment domain. Quantizing a code model on
+  web text, or a chat model on raw pretraining text, degrades the relevant capabilities.
+
+These knobs are why two checkpoints both labeled "4-bit GPTQ" can differ substantially
+in quality, and why the "quantized model of unknown provenance" problem (Section 02) is
+real. A well-documented quantization states its group size, act-order, protected layers,
+and calibration set; an undocumented one is a gamble.
+
+## Quantizing instruction-tuned, multimodal, and MoE models
+
+The methods above were largely developed and benchmarked on base language models, but
+real deployments quantize more complex models, each with quirks:
+
+- **Instruction-tuned / chat models** are more sensitive to quantization than their base
+  models on the specific behaviors that were fine-tuned in (following formats, refusing
+  appropriately, tool-calling), even when perplexity is preserved — the fine-tuned
+  behaviors live in relatively fragile weight adjustments. Calibration on
+  instruction-formatted data and careful task evaluation (not just perplexity) are
+  important. AWQ's robustness makes it a common choice here.
+- **Multimodal models** (vision-language) add an image encoder and cross-modal
+  projections whose activation statistics differ from the language backbone. The vision
+  encoder often tolerates quantization well (it is CNN/ViT-like), but the projection and
+  fusion layers can be sensitive, and calibration must include image inputs. Uniform
+  application of a text-tuned recipe can degrade visual grounding.
+- **Mixture-of-Experts (MoE)** models route each token to a subset of experts, so each
+  expert sees only a fraction of tokens and a skewed distribution. Shared calibration
+  under-samples rarely-used experts, and quantizing all experts identically ignores their
+  differing sensitivities. MoE quantization is an active area; practical approaches
+  include per-expert calibration and keeping the router in higher precision (router
+  errors misroute tokens, which is costly). MoE also interacts with memory: since only a
+  few experts are active per token, weight-only quantization's memory win is especially
+  valuable, but the *total* expert weight set must still fit in memory.
+
+The general lesson mirrors Section 03's model-family point: the reference methods work,
+but each model class needs its calibration and evaluation adapted to its structure, and
+"quantize it like a base LLM" is a starting point, not a finished recipe.
+
+## What the accuracy benchmarks actually show
+
+A recurring question is how much accuracy quantization *really* costs, and the honest
+answer requires care about what is measured. On **perplexity** (the historical proxy),
+4-bit weight-only quantization of large models is nearly indistinguishable from FP16 —
+differences of a few hundredths to tenths of a point, which is why the marketing story
+is "4-bit is free." On **downstream task suites** (MMLU, GSM8K, HumanEval,
+instruction-following), the picture is more nuanced: 4-bit typically loses 0–2 points on
+most tasks, with the loss concentrated in the hardest tasks (multi-step reasoning, code)
+where the model has the least margin. At **3-bit**, losses become clearly visible
+(several points) and task-dependent. At **2-bit**, even the best methods (QuIP#, AQLM)
+lose meaningful capability on hard tasks despite holding perplexity reasonably — a vivid
+illustration that perplexity and capability diverge under aggressive quantization.
+
+Three benchmark caveats matter. First, **larger models quantize better**: a 70B model at
+4-bit loses less (relatively) than a 7B model at 4-bit, because larger models have more
+redundancy to spare — so a method's "accuracy retention" depends heavily on the model
+size it was measured on. Second, **the failure is uneven**: aggregate scores hide that
+quantization can specifically damage long-context behavior, calibration/confidence, and
+rare-but-important capabilities (Section 07). Third, **evaluation setup varies**: group
+size, protected layers, and calibration differ across published numbers, so cross-method
+comparisons from different papers are only roughly commensurable. The disciplined
+conclusion: 4-bit weight-only is genuinely low-cost for most on-device use, 3-bit is a
+real tradeoff, 2-bit is for when memory forces it — and any specific claim should be
+validated on the actual model and task, not taken from a paper's headline number.
+
+## Kernel engineering: why fast quantized inference is hard
+
+The gap between a method's paper and its production speed is bridged by kernel
+engineering, which deserves its own treatment because it explains many method-selection
+decisions. A weight-only 4-bit matmul must, per output, read 4-bit weights from memory,
+*dequantize* them to a compute precision, and multiply-accumulate against FP16
+activations. The challenge is that dequantization is extra work that can bottleneck the
+matmul if done naively, erasing the memory-bandwidth win. Fast kernels (Marlin, Machete,
+AWQ's kernels, TensorRT-LLM's) solve this by:
+
+- **Overlapping dequantization with computation** so the dequant cost hides behind memory
+  loads and tensor-core math.
+- **Packing weights in a hardware-friendly layout** that matches the tensor-core tile
+  shape and the memory-access pattern, avoiding costly permutations at runtime (which is
+  why GPTQ's act-order reordering is a kernel headache).
+- **Exploiting the memory-bound regime**: since LLM decode is memory-bound, the kernel's
+  job is mostly to move 4-bit weights fast and dequant cheaply; the actual FLOPs are not
+  the bottleneck. This is why weight-only 4-bit gives near-4× decode speedup — the
+  speedup is fundamentally about reading 4× fewer weight bytes.
+
+Codebook methods (AQLM, QuIP#) are harder to make fast because their decode is a
+lookup (and, for AQLM, multiple lookups and additions) rather than a cheap
+scale-and-shift, which does not overlap as cleanly with the matmul. This is the concrete
+reason 2-bit codebook methods are accuracy leaders but throughput laggards, and why a
+method's *kernel* availability on the target hardware often matters more than its
+paper accuracy. A method with no fast kernel for your device is, in practice, a memory
+optimization only.
+
+## Quantization's interaction with other inference optimizations
+
+Quantization does not operate alone in a modern inference stack, and its interactions
+matter. **Speculative decoding** (using a small draft model to propose tokens verified by
+the large model) composes well with quantization — both the draft and target can be
+quantized — but the draft model's quantization must not degrade its acceptance rate too
+much, or the speculative speedup shrinks. **FlashAttention** and other attention kernels
+are largely orthogonal to weight quantization but interact with KV-cache quantization
+(the attention kernel must read the quantized cache). **Continuous batching** in servers
+changes the arithmetic intensity and can shift a workload from memory-bound toward
+compute-bound, which changes whether weight-only or W8A8/FP8 is the better choice.
+**Paged attention** and KV-cache quantization together determine long-context memory.
+The practical point: quantization is one lever in a system, and its optimal setting
+depends on the other levers — a fact that Section 06's co-design discussion and
+Section 07's tradeoff analysis develop further.
+
 ## The method comparison table
 
 The table below is the core reference for this section — 15 methods with their bit-width
