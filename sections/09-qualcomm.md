@@ -440,6 +440,69 @@ influence spans the edge-computing landscape, and its precision choices propagat
 markets far beyond the phone — reinforcing its role as a de-facto quantization platform for the
 edge.
 
+## INT2 and FP8: what the 2025 frontier formats mean
+
+The Snapdragon 8 Elite Gen 5's addition of INT2 and FP8 (2025) is strategically significant
+and worth analyzing rather than just noting. **INT2** in a mass-market phone NPU signals that
+Qualcomm expects sub-4-bit quantization to matter for on-device models — likely for fitting
+larger models (bigger models quantize better at low bits, Section 07) or specific
+quantization-native or codebook-quantized models (Section 05). The caveat is severe: as
+Section 05 established, general INT2 quantization of normally-trained models is fragile and
+needs advanced methods (QuIP#/AQLM codebooks or quantization-native training), so INT2 hardware
+support does not mean INT2 is broadly usable — the accuracy-preserving software must catch up,
+and whether Qualcomm's tooling exposes accurate INT2 workflows is unverified (⚠️). **FP8**
+support is more immediately useful: FP8's outlier-robust range (Section 04) makes it attractive
+for *activation* quantization of transformers, potentially enabling W8A8-FP8 compute speedups
+on-device for the compute-bound prefill phase, complementing INT4 weight-only for the
+memory-bound decode. FP8 also aligns Qualcomm with the data-center direction (NVIDIA, OCP FP8
+standard), easing model portability. The honest reading of both: Qualcomm is provisioning
+silicon for the sub-8-bit frontier ahead of the software — the recurring pattern — betting that
+being early is better than being late given long silicon design cycles. Whether INT2 and FP8
+deliver production value on the 8 Elite Gen 5 depends on tooling and model support that will
+develop over the generation's life, and until independent low-bit accuracy benchmarks appear,
+these capabilities are best treated as forward-looking silicon investments rather than
+immediately-cashable features — hence their 🟡 maturity and ⚠️ flags. Their presence, however,
+confirms Qualcomm's intent to stay at the precision frontier.
+
+## The Snapdragon X PC push in depth
+
+Qualcomm's entry into Windows laptops with Snapdragon X (2024) deserves fuller treatment
+because it extends mobile quantization into a new market with different dynamics. Microsoft's
+**Copilot+ PC** specification required a 40+ TOPS NPU, and Qualcomm's Snapdragon X Elite/Plus
+(with a Hexagon NPU rated ~45 TOPS ⚠️) was the launch silicon, ahead of Intel and AMD's
+qualifying parts. This brought Qualcomm's integer-centric, aggressively-quantized NPU approach —
+and its AIMET/QNN/AI Hub tooling — into the PC market. The significance for quantization: PCs
+have more memory and power than phones, enabling larger on-device models (7–13B class at
+4-bit), but the same quantization principles apply (INT4 weight-only for memory-bound LLM
+decode, INT8/FP16 for vision). The Copilot+ features (on-device language and image models) run
+on quantized models on the NPU, making quantized on-device inference a mainstream laptop
+capability. It also intensified the NPU competition with Intel (OpenVINO, Core Ultra) and AMD
+(Ryzen AI), all now shipping 40+ TOPS NPUs for the same Copilot+ target (Section 11). For
+Qualcomm, the PC push broadens the installed base targeting its quantization schemes and
+validates the mobile-derived NPU approach in a larger-device context. For the ecosystem, it
+means INT4 weight-only on-device LLM inference is now a cross-device expectation from phones to
+laptops, with Qualcomm a leader in both — reinforcing the 4-bit-weight-only standard the whole
+database keeps returning to.
+
+## A note on verification
+
+As with Apple, Qualcomm's performance claims warrant the skepticism Section 04 prescribed.
+Qualcomm's TOPS figures (e.g. ~80 TOPS for the 8 Elite Gen 5) and "X% faster / Y% more
+efficient" generation-over-generation claims are vendor-produced and rarely accompanied by
+independent, reproducible benchmarks — they conflate precision, utilization, and methodology,
+and are not comparable across vendors. Qualcomm's on-device generative-AI demos (Stable
+Diffusion, on-device LLMs) are real existence proofs but their headline performance numbers are
+vendor-measured under favorable conditions. What has higher confidence is the **disclosed
+precision support** (platform briefs explicitly list the supported formats, which is more than
+Apple provides) and the **tooling** (AIMET is open source and its methods are published). So
+this section treats Qualcomm's precision-support claims as reasonably solid (official platform
+documentation) while flagging the throughput and speedup claims as vendor assertions, and
+flagging the *software maturity and real-world accuracy* of the newest formats (INT2, FP8) as
+unverified pending independent benchmarks. The practical guidance mirrors the rest of the
+database: trust the disclosed format support and the open tooling, discount the TOPS and
+percentage-improvement marketing, and validate performance and accuracy on the actual target
+device — the discipline that separates a realistic assessment from a spec-sheet reading.
+
 ## Master database contributions
 
 This section contributes: Qualcomm (chipmaker, Hexagon NPU), AIMET (framework/PTQ+QAT tool),
