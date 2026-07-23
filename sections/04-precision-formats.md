@@ -325,6 +325,188 @@ understand about the format landscape, and it is why every FP4/INT2 claim in thi
 database carries a confidence flag until independent low-bit accuracy benchmarks
 appear.
 
+## The anatomy of a floating-point format
+
+Understanding low-bit floating point requires understanding what the bits actually
+encode, because the sub-8-bit formats make design choices that FP32 hides. A
+floating-point number is `(-1)^sign × (1 + mantissa) × 2^(exponent - bias)` for
+normal values, where the mantissa is the fractional bits, the exponent is a stored
+unsigned integer, and the **bias** shifts it so both positive and negative exponents
+are representable. Several design decisions matter enormously at low bit-widths:
+
+- **The exponent bias** determines where the representable range is centered. FP8
+  E4M3 uses a bias of 7; the OCP standard tunes these choices so the range brackets
+  typical neural-network magnitudes. Get the bias wrong and half the format's range
+  is wasted on magnitudes the data never reaches.
+- **Subnormals (denormals)** are values with a zero exponent field that fill in the
+  gap between the smallest normal number and zero, giving graceful underflow. At 3 or
+  fewer mantissa bits, whether subnormals are supported materially changes how many
+  small values are representable — E4M3 supports them, and they matter for the small
+  weights near zero that dominate a neural network by count.
+- **Special values.** IEEE FP reserves bit patterns for ±infinity and NaN. The
+  low-bit OCP formats *reclaim* some of these patterns for finite values because at 8
+  or 4 bits, spending two of only 256 (or 16) codes on infinities is wasteful. FP8
+  E4M3, for instance, has no infinities and only one NaN, freeing codes for finite
+  magnitudes up to ±448. This is why "FP8 E4M3" ranges to 448 rather than a rounder
+  power of two — the standard traded IEEE special-value semantics for range.
+- **The implicit leading one.** Normal floating-point mantissas have an implicit
+  leading 1 bit (not stored), so E4M3's 3 stored mantissa bits give 4 bits of
+  significand precision. This free bit is why even a 1-mantissa-bit FP4 (E2M1) has 2
+  bits of effective significand for normal values.
+
+These details are invisible in FP32 but decisive in FP8/FP4, where every code counts.
+They are also why low-bit floating-point formats had to be *standardized* (OCP)
+rather than left to each vendor — a model quantized to one vendor's idiosyncratic FP8
+would not run correctly on another's without agreement on bias, subnormals, and
+special values.
+
+## Integer quantization arithmetic in hardware
+
+The counterpart worth understanding is how integer quantized matmul actually executes,
+because it explains both the speed and the accuracy properties of INT8/INT4. A
+quantized matrix multiply of INT8 inputs does *not* accumulate in INT8 — it
+accumulates in a wider **INT32 accumulator**, because summing thousands of INT8
+products would overflow 8 bits almost immediately. The dot product of two INT8 vectors
+of length `K` can reach roughly `K × 127 × 127`, which for `K = 4096` is ~66 million —
+well within INT32's ~2.1 billion range but far beyond INT8. The pipeline is:
+
+1. Multiply INT8 × INT8 → INT16/INT32 partial products.
+2. Accumulate into INT32.
+3. Apply the zero-point corrections (for asymmetric operands) — these are the extra
+   terms that make asymmetric quantization more expensive than symmetric.
+4. **Requantize** the INT32 result back down to INT8 for the next layer, by
+   multiplying by the combined scale (a fixed-point multiply-and-shift) and rounding.
+
+The requantization step (INT32 → INT8) is where the output scale of one layer meets
+the input scale of the next, and doing it in cheap integer arithmetic (a multiply by a
+fixed-point constant and a right-shift) is exactly what the Jacob et al. (2018) scheme
+of Section 02 specified. The **accumulator width** is a real hardware constraint: if
+the reduction dimension `K` is very large or the format is INT16, a 32-bit accumulator
+can overflow, forcing intermediate rescaling. INT4 matmul works similarly but often
+*unpacks* to INT8 internally on hardware without native INT4 datapaths, meaning the
+memory saving is real but the compute saving may not be — a crucial distinction when
+reading a spec sheet that lists "INT4 support."
+
+## The INT4-versus-FP4 debate
+
+At 4 bits, integer and floating point have the *same number of representable values*
+(16), so the choice between them is purely about *where those 16 values are placed*.
+This is one of the liveliest format debates in the field, and the answer is
+genuinely workload-dependent.
+
+**The case for INT4.** Uniform spacing gives maximum resolution for data that occupies
+its range evenly. For weights that have already been normalized or that live in a
+well-behaved range (especially with per-group scales that adapt the range per block),
+uniform INT4 spends all 16 codes usefully. INT4 hardware is cheaper and INT4 tooling
+(GPTQ, AWQ, GGUF) is mature and battle-tested. For weight-only LLM quantization, INT4
+per-group is the proven production choice.
+
+**The case for FP4.** Floating-point spacing (fine near zero, coarse far away)
+matches the bell-shaped weight distribution better than uniform spacing, and handles
+per-block outliers more gracefully because the exponent absorbs them. When FP4 is
+wrapped in a microscaling block (MXFP4), the per-32 shared scale gives it range
+adaptation that rivals fine-grained integer per-group. NVIDIA's Blackwell results
+argue FP4 (specifically NVFP4/MXFP4) can match INT4 accuracy while being more robust
+to outliers and, crucially, usable for *training*, which uniform INT4 is not.
+
+**The synthesis.** For inference of pre-trained weights, well-tuned INT4 per-group and
+MXFP4 are close, and the winner depends on the specific model and the quality of the
+scales; INT4 has the maturity edge today, MXFP4 has the hardware-momentum edge going
+forward. For training and for activations with heavy outliers, floating point (FP4/
+FP8) has the structural advantage. Expect the two to coexist, with hardware
+supporting both and compilers choosing per-tensor — which is exactly the direction
+the newest silicon has taken.
+
+## How GGUF k-quants pack bits: a concrete format case study
+
+The GGUF k-quant formats (llama.cpp) are worth dissecting because they are the most
+widely-used low-bit formats in the world and they embody every principle in this
+section. A k-quant type like **Q4_K** does not simply store 4-bit weights. It uses a
+two-level **super-block** structure: a super-block of 256 weights is divided into 8
+sub-blocks of 32, each sub-block has its own 6-bit scale and 6-bit minimum (for
+asymmetric quantization), and those per-sub-block scales are themselves quantized
+against a super-block-level FP16 scale. The weights are 4-bit. This hierarchical
+scaling is exactly the "quantize the scales" idea (double quantization) that keeps the
+per-group overhead affordable: instead of an FP16 scale per 32 weights (0.5 bits/
+weight of overhead), the 6-bit sub-scale plus shared super-scale costs far less.
+
+The k-quant family then spans a spectrum — Q2_K, Q3_K, Q4_K, Q5_K, Q6_K, and the
+`_S`/`_M`/`_L` (small/medium/large) variants — that mix bit-widths *within a model*:
+the more important tensors (attention `wv`, feed-forward `w2`) get an extra bit or
+two, the rest get the base bit-width. A "Q4_K_M" model is therefore not uniformly
+4-bit; it is a carefully-tuned mixed-precision format averaging ~4.5–4.8 effective
+bits/weight, which is why it retains accuracy so well. The GGUF k-quants are a
+masterclass in applied numeric-format design: hierarchical scales, block floating
+point in spirit, importance-weighted mixed precision, and honest effective-bit
+accounting — all engineered for CPU SIMD execution. They are the reason a 7B model
+runs well on a laptop, and they demonstrate that *format engineering*, not just
+algorithm engineering, is where a lot of real-world quantization quality comes from.
+
+## The cost of format transitions
+
+A subtlety that becomes important in mixed-precision and heterogeneous pipelines is
+that **converting between formats is not free**. Moving a tensor from INT8 to FP16, or
+from an integer format to a microscaling block format, costs instructions, memory
+traffic, and sometimes a round-trip through a different execution unit. A graph that
+switches formats frequently — INT8 matmul, FP16 softmax, INT8 matmul, FP16 LayerNorm —
+pays a conversion tax at every boundary, and on some hardware the format-conversion
+units are a bottleneck. This is why compilers work hard to *fuse* operations and keep
+runs of the same format together, and why "islands" of high-precision computation
+(the range-sensitive nonlinearities of Section 03) are costly not just for their own
+compute but for the conversions at their edges. The ideal is long runs of a single
+low-precision format with conversions amortized; the reality is a negotiation between
+the model's structure and the hardware's format-transition efficiency. Section 06
+develops this as a core co-design concern.
+
+## Exotic and emerging formats
+
+Beyond the mainstream integer and floating-point families, several alternative number
+systems appear in research and specialized hardware, and a couple may matter going
+forward:
+
+- **Posits (Type III unums).** An alternative to IEEE floating point with a
+  variable-length exponent/mantissa split (via "regime" bits) that gives more
+  precision near 1.0 and graceful degradation toward the extremes. Posits have
+  enthusiastic academic backing and some FPGA/accelerator implementations, and they
+  can beat IEEE floats at equal bits for some distributions — but they lack the
+  hardware ecosystem and standardization momentum of the OCP formats, and mainstream
+  adoption remains speculative.
+- **Logarithmic Number Systems (LNS).** Represent values by their logarithm, turning
+  multiplication into addition (cheap) but making addition expensive (needs lookup).
+  Attractive for multiply-heavy, addition-light workloads and ultra-low-power
+  accelerators; niche in mainstream AI silicon.
+- **Stochastic / probabilistic formats.** Explored for ultra-low-power and
+  in-memory-compute hardware, where values are represented by bit-stream statistics.
+  Firmly research-stage for neural networks.
+- **Shared-microexponent formats (MX variants).** Beyond the standard MX, research
+  explores finer-grained shared-exponent schemes (e.g. a shared exponent per 16 or
+  per 8 elements, or two-level exponent sharing) that trade metadata overhead for
+  range adaptation. These are natural extensions of the microscaling idea and likely
+  to appear in future hardware.
+
+The through-line: the OCP integer/float/MX formats have such strong industry momentum
+that exotic alternatives face a steep adoption barrier regardless of theoretical
+merit — the ecosystem effect (tooling, standardization, cross-vendor agreement) now
+dominates format selection as much as the numerics do. A format that is 5% better on
+paper but lacks silicon and compiler support loses to a standardized format that
+"just works," which is the same lesson the technique history of Section 02 taught.
+
+## The economics of format proliferation
+
+A closing structural observation: the number of numeric formats a model might be
+shipped in has exploded, and this proliferation has real costs. A single model may
+exist as FP16, BF16, INT8 (per-channel), INT4 (GPTQ g=128), INT4 (AWQ), NF4, several
+GGUF k-quant variants, FP8, and MXFP4 checkpoints simultaneously — each requiring its
+own kernels, its own validation, and its own accuracy characterization. For hardware
+vendors, supporting many formats multiplies silicon area and verification effort; for
+software maintainers, it multiplies the kernel matrix; for model publishers, it
+multiplies the artifacts to produce and document. This is a force *toward*
+consolidation — the industry has a strong incentive to converge on a small set of
+formats (INT8, weight-only INT4, FP8, and MXFP4/MXFP8 as the likely survivors), which
+is much of the appeal of the OCP standardization effort. Section 14 returns to this
+consolidation pressure as a forward-looking trend; for now the point is that the
+format landscape is broad today but under economic pressure to narrow.
+
 ## Summary
 
 Numeric formats divide into uniform integer types (cheap hardware, uniform
