@@ -492,6 +492,33 @@ technology), many acquisitions (the differentiated software startups absorbed by
 failures — the normal distribution of outcomes for a deep-tech frontier, playing out over the coming
 years as the field matures.
 
+## The strategic and sovereign-AI dimension
+
+A dimension gaining importance is the **strategic and sovereign-AI** angle to quantization/efficiency
+startups, which shapes funding and outcomes beyond pure commercial logic. Governments and strategic
+investors increasingly view AI-compute capability — including efficient-inference and compression
+technology — as strategically important, not just commercially valuable. This manifests in several ways.
+The **European** deep-tech funding (EU/EIC support for Axelera, and the general European push for
+sovereign AI-infrastructure capability) reflects a desire not to depend entirely on US (NVIDIA) and Asian
+silicon, making efficient-inference startups strategically as well as commercially interesting to European
+funders — Multiverse's large raise and Axelera's EU backing partly reflect this. **China's** domestic
+AI-chip and compression ecosystem (Section 11) is heavily shaped by the strategic imperative to build
+sanctions-resilient AI capability, where quantization is doubly important (fitting models on constrained
+domestic hardware), driving domestic startup activity with strategic backing. **Strategic corporate
+investors** (Microsoft in d-Matrix, HP and Toshiba in Multiverse, and others) invest partly for strategic
+access to efficient-inference technology and to hedge against NVIDIA dependence, not just for financial
+return. This strategic dimension means some quantization/efficiency startups are funded and sustained by
+more than pure venture economics — they serve national or corporate strategic goals of AI-compute
+independence and efficiency, which can provide funding and patience beyond what commercial metrics alone
+would justify. It also means the landscape is shaped by the broader geopolitics of AI compute (Section
+11's bifurcation theme), with efficient-inference and compression technology seen as a lever for reducing
+dependence on the dominant (NVIDIA/US) AI-compute supply. For assessing the landscape, this strategic
+dimension is a real factor — it explains some of the funding (strategic as well as financial) and suggests
+that efficient-inference startups may find support (public and strategic-corporate) beyond pure venture
+capital, particularly outside the US where AI-compute sovereignty is a policy priority. The strategic
+importance of AI-compute efficiency, of which quantization is central, thus extends the startup landscape's
+significance beyond commerce into the geopolitics of AI infrastructure.
+
 ## Synthesis
 
 The quantization/compression startup landscape spans three categories — compression software, in-memory/
