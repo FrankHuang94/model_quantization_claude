@@ -706,6 +706,71 @@ that because FP4 training works, FP4 *inference* of an FP16-trained model is eas
 serve all three roles, and Section 14 returns to low-precision training as a forward
 trend.
 
+## Hardware-imposed constraints on scheme choice
+
+The clean design space described above is, in practice, heavily pruned by what the
+target hardware can execute. A quantization scheme is only useful if the compiler can
+map it to native kernels; otherwise it either falls back to a slow emulated path or
+is rejected outright. The main hardware constraints that shape scheme choice:
+
+- **Supported precisions.** If the NPU has INT8 and INT4 matrix units but not INT2,
+  a 2-bit scheme buys memory savings only — the compute still runs at INT4 or INT8
+  after unpacking, so the latency benefit evaporates. Format support (Section 04) is
+  the first filter.
+- **Symmetric-only datapaths.** Some accelerators support only symmetric
+  quantization to keep the integer datapath cheap (no zero-point correction). This
+  forecloses asymmetric activation quantization, pushing the engineer toward
+  symmetric schemes with careful range handling, or toward keeping activations in a
+  float format the hardware does support (FP16/FP8).
+- **Granularity limits.** Hardware that applies a single scale per tile may not
+  support arbitrary per-group scales; the group size must align to the tile
+  dimension. This is exactly why the microscaling (MXFP) formats fix the block size
+  (e.g. 32) — it matches a hardware-natural granularity. A software scheme with g=128
+  may need repacking to run on a g=32-native engine.
+- **Mixed-precision execution.** Outlier-decomposition methods (LLM.int8()) need to
+  run part of the matmul in FP16 and part in INT8 and combine them; hardware and
+  compilers that cannot express this efficiently make such methods slow.
+- **Accumulator width.** Low-bit matmuls accumulate into a wider integer (typically
+  INT32); if the accumulator is too narrow for the reduction length, overflow forces
+  intermediate rescaling that costs performance. This constrains how large a matmul
+  can run at what precision.
+
+The upshot is that the *feasible* quantization scheme for a given deployment is the
+intersection of what the algorithm wants and what the silicon supports — which is why
+the vendor sections (08–11) spend so much effort cataloguing exact format and
+granularity support, and why "does this NPU support per-group INT4 with FP16 scales
+natively" is a more useful procurement question than "how many TOPS."
+
+## How quantization interacts with other compression
+
+Quantization is one of several model-compression techniques, and it composes with
+the others — sometimes synergistically, sometimes with diminishing returns.
+
+- **Pruning + quantization** is the classic pairing (Deep Compression). Unstructured
+  pruning zeros individual weights; structured pruning (2:4 sparsity on NVIDIA
+  hardware, channel pruning) removes them in hardware-friendly patterns. Sparsity and
+  quantization are largely complementary — sparsity reduces the *number* of weights,
+  quantization the *bits per weight* — and hardware that accelerates both (NVIDIA's
+  2:4 sparse tensor cores) can stack the gains. But aggressive pruning removes
+  redundancy the network was using to absorb quantization noise, so the combined
+  degradation can exceed the sum of the parts; the two must be co-tuned.
+- **Knowledge distillation + quantization** uses a full-precision teacher to guide a
+  quantized student, recovering accuracy the quantization lost. ZeroQuant's layer-wise
+  distillation and many QAT recipes lean on this; it is one of the most reliable ways
+  to close a low-bit accuracy gap when training data is available.
+- **Low-rank factorization + quantization** decomposes weight matrices into products
+  of smaller matrices, then quantizes those; QLoRA's low-rank adapters over quantized
+  weights are a special case that also enables fine-tuning.
+- **Architecture (NAS) + quantization** — quantization-aware neural architecture
+  search designs models that quantize well from the start, and quantization-native
+  architectures (BitNet) take this to its limit.
+
+The general principle is that these techniques share a single underlying budget — the
+network's *redundancy* — and each one spends some of it. Stacking them works until the
+redundancy runs out, after which further compression by any method degrades the model.
+Co-design of the whole compression stack (which Section 06 and Section 14 develop) is
+therefore more powerful than optimizing any single technique in isolation.
+
 ## Summary
 
 The theory of quantization reduces to a handful of orthogonal choices — the affine
