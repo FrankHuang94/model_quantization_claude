@@ -485,6 +485,136 @@ racing past the Copilot+ 40-TOPS bar — but recall that TOPS is a near-useless 
 and the *quantization tooling and memory bandwidth* matter more than the peak number for real
 on-device workloads.
 
+## Automotive edge AI: a cross-player battleground
+
+Automotive is an increasingly important edge-AI quantization battleground that cuts across several
+players and deserves its own treatment. In-vehicle AI spans perception (camera/radar/lidar
+processing for ADAS and autonomy), in-cabin monitoring (driver attention, occupant detection), and
+increasingly generative in-cabin assistants — all running on-device under strict power, thermal,
+latency, and *safety* constraints. Quantization is essential (the compute and power budgets demand
+it) but the safety-criticality (Section 07) makes it delicate: a quantized perception model must not
+degrade on rare-but-critical objects (the fairness/rare-case concern), and automotive-grade
+validation is far more rigorous than consumer. The players competing here include **NVIDIA** (Drive
+platform, the performance leader for high-end autonomy, with the full TensorRT quantization stack),
+**Qualcomm** (Snapdragon Ride), **MediaTek** (partnering with NVIDIA), **Intel/Mobileye** (Mobileye's
+EyeQ chips run heavily-quantized perception networks — Mobileye has deep expertise in quantizing
+vision models for automotive), and various others. Mobileye in particular is a notable
+quantization-intensive player: its EyeQ SoCs run perception at low precision with automotive-grade
+reliability, representing years of expertise in safety-critical quantized vision. The automotive
+quantization challenge is distinctive — it combines the tight edge constraints that make
+quantization necessary with the safety requirements that make aggressive quantization risky,
+forcing conservative, exhaustively-validated schemes (often INT8 with QAT rather than aggressive
+sub-8-bit). As vehicles add generative in-cabin AI, the on-device-LLM quantization techniques of
+Section 05 enter automotive too, subject to the same safety-validation rigor. Automotive is thus a
+high-stakes venue where the quantization tradeoff is managed conservatively, and it is a market
+where NVIDIA's tooling leadership and Mobileye's/Qualcomm's automotive-specific expertise compete.
+
+## The open-source quantization tooling that spans vendors
+
+A cross-cutting reality worth emphasizing is that much of the practical quantization work happens in
+*open-source, vendor-neutral* tooling that spans all these players, and this shared layer is as
+important as any single vendor's stack. The Hugging Face ecosystem (transformers, the quantization
+backends integrating bitsandbytes, GPTQ, AWQ, HQQ, and others), llama.cpp/GGUF, ONNX Runtime, Apache
+TVM, and the PyTorch quantization flows (including ExecuTorch for edge) are the tools most developers
+actually use to quantize models, and they target *multiple* vendors' hardware through backends,
+delegates, and execution providers. Intel's Neural Compressor and OpenVINO, and ARM's KleidiAI, are
+notable for being vendor-associated yet broadly useful across hardware. This shared open-source layer
+means that the quantization *methods* (Section 05) are largely vendor-neutral — a model quantized
+with GPTQ or AWQ can, in principle, target many vendors' silicon — while the *deployment* to specific
+NPUs is where the vendor-specific tooling (QNN, Core ML, NeuroPilot, TensorRT, OpenVINO) takes over.
+The practical workflow for many developers is therefore: quantize with vendor-neutral open-source
+tools (or download a pre-quantized model), then deploy to the target via the vendor's runtime or a
+portable runtime (ONNX Runtime, LiteRT) with the appropriate backend. This layered reality — neutral
+quantization methods, vendor-specific deployment — is why the standardization of the *exchange*
+format and quantized-operator semantics (Section 15) matters so much, and it is why no single
+vendor's tooling fully captures the quantization landscape: the shared open-source layer is the
+common ground on which the vendor-specific layers build. For the multipolar landscape, this shared
+layer is a unifying force that partially offsets the fragmentation of the vendor-specific stacks.
+
+## Geopolitics and the bifurcation of the quantization ecosystem
+
+The quantization landscape, like the broader semiconductor industry, is increasingly shaped by
+geopolitics, and this deserves explicit treatment because it affects the ecosystem's structure. US
+export controls on advanced chips and manufacturing equipment to China have created a partial
+**bifurcation**: Huawei (Ascend, MindSpore, CANN) and other Chinese players are building a
+domestic AI-hardware-and-software ecosystem partly decoupled from the Western PyTorch/ONNX/NVIDIA
+ecosystem, with quantization playing a heightened role (quantization helps fit models onto the
+less-advanced silicon that sanctions permit domestically, and onto the domestic accelerators being
+developed as NVIDIA alternatives). This bifurcation has several implications for quantization.
+First, it creates parallel tooling ecosystems (MindSpore/CANN vs. PyTorch/ONNX) with potentially
+diverging quantization approaches and standards, complicating the standardization picture (Section
+15). Second, it raises the strategic importance of quantization within China, as a way to maximize
+the AI capability achievable on sanctions-constrained hardware. Third, it means the quantization
+landscape is not a single global ecosystem but increasingly two partially-separate ones, with the
+Western ecosystem (the focus of most of this database) and a Chinese domestic ecosystem developing
+in parallel with limited cross-flow. For a complete picture, the Chinese domestic ecosystem —
+Huawei's Ascend, plus other domestic AI-chip efforts and the models being built on them — is a
+significant and growing part of the quantization world, even if it is less visible in the
+Western-accessible literature this database mostly draws on. The geopolitical dimension is a
+structural force shaping where quantization research and deployment happen, and it is likely to
+intensify, making the landscape more multipolar not just technically but geopolitically.
+
+## Foundries, process nodes, and the physical substrate
+
+An underlying factor across all these players is the **foundry and process-node** dimension, which
+shapes NPU efficiency and thus the practical value of quantization. NPU energy efficiency depends on
+the manufacturing process (a smaller node means lower energy per operation), and access to
+leading-edge nodes (TSMC's and Samsung's most advanced processes) is a competitive factor. Apple,
+Qualcomm, MediaTek, NVIDIA, AMD, and Google (via TSMC) have access to leading-edge nodes, giving
+their NPUs strong efficiency; Samsung has its own foundry; Huawei's access to leading-edge nodes is
+constrained by sanctions, affecting its silicon competitiveness. The process node interacts with
+quantization because the energy savings from quantization (fewer bits moved and computed) compound
+with the energy savings from a better process — both attack the energy budget that constrains edge
+AI. The physical substrate also determines memory bandwidth (the roofline's binding constraint,
+Section 06): the memory technology (LPDDR5X, LPDDR6, and the on-package memory some designs use) and
+its integration affect how fast quantized weights can be streamed, which for memory-bound LLM decode
+is the performance determinant. Samsung and SK Hynix (and Micron) as memory makers, and the SoC
+vendors' memory-integration choices, thus matter to the quantization value proposition. This
+physical-substrate layer is easy to overlook in a quantization-focused analysis, but it is the
+foundation on which the quantization gains are realized — a better process and faster memory
+amplify quantization's benefits, and access to them is unevenly distributed across the players,
+partly for geopolitical reasons.
+
+## Who leads which market: a segmentation
+
+Pulling the player analysis into a market segmentation clarifies the multipolar picture. In
+**flagship mobile**, the leaders are Qualcomm, Apple, and MediaTek (Sections 08-10), with Samsung and
+Google (Tensor) as integrated device-makers using their own and partners' silicon. In the **AI PC**,
+the race is Intel, AMD, and Qualcomm (with Apple as the integrated Mac alternative), all pushing
+40-50+ TOPS NPUs and competing on quantization tooling. In **robotics/embedded/edge-server**, NVIDIA
+(Jetson) leads on performance with its full quantization stack, with ARM-based and other solutions in
+lower-power niches. In **tinyML/microcontroller**, ARM's IP (Ethos, Cortex-M, CMSIS-NN, KleidiAI)
+dominates, with a multi-vendor silicon ecosystem. In **automotive**, NVIDIA, Qualcomm, Mobileye/Intel,
+and others compete under safety constraints. In **the Chinese domestic market**, Huawei (Ascend/Kirin)
+and other domestic players lead a partially-decoupled ecosystem. And in **cross-vendor tooling**,
+NVIDIA (TensorRT), Intel (OpenVINO/Neural Compressor), Google (LiteRT), and the open-source ecosystem
+(Hugging Face, llama.cpp, ONNX Runtime) provide the methods and runtimes that span the hardware. This
+segmentation shows why no single player dominates: the edge-AI market is many markets, each with
+different constraints (power, safety, cost, performance) and different leaders, unified only by the
+common quantization baseline (INT8, weight-only INT4). The multipolar reality is not a transitional
+state toward consolidation but a reflection of the genuinely diverse requirements of edge AI, from
+microwatt sensors to automotive perception to AI PCs — and quantization is the common technology that
+serves all of them, adapted to each segment's constraints.
+
+## Emerging and adjacent players
+
+Beyond the ten major players, the landscape includes emerging and adjacent participants worth noting
+briefly (with the startups covered fully in Section 13). **RISC-V-based** AI accelerators are
+emerging as an open-ISA alternative, with several vendors building NPUs on RISC-V cores, potentially
+important for the open-hardware and Chinese-domestic ecosystems. **Cloud providers'** custom
+inference silicon (AWS Inferentia, Google's TPU for cloud, Microsoft's Maia) are data-center-focused
+but influence the quantization ecosystem through the formats and methods they adopt. **Specialized
+AI-accelerator companies** (some covered in Section 13) build custom silicon with distinctive
+quantization stances (native low-bit, in-memory compute, block floating point). And **traditional
+embedded/DSP vendors** (Texas Instruments, NXP, Renesas, and others) integrate NPUs into their
+microcontrollers and application processors for industrial and automotive edge, running quantized
+INT8 models. This long tail, plus the RISC-V and cloud-silicon developments, means the quantization
+landscape is even broader than the ten major players suggest, and it is continually expanding as new
+entrants build AI silicon. The common thread across all of them is the reliance on quantization to
+make AI fit their power, cost, and memory constraints — quantization is the universal enabling
+technology of the entire multipolar edge-AI landscape, from the largest players to the smallest
+niche accelerators.
+
 ## Synthesis: the multipolar quantization landscape
 
 Across all ten players (these seven plus Apple/Qualcomm/MediaTek), several patterns hold. **INT8
