@@ -1,0 +1,8 @@
+year,platform,npu,precisions,note
+2019,Snapdragon 855,Hexagon 690,INT8;INT16,Tensor accelerator added
+2020,Snapdragon 888,Hexagon 780,INT8;INT16;FP16,Fused scalar/vector/tensor
+2021,Snapdragon 8 Gen 1,Hexagon,INT8;INT16;FP16,—
+2022,Snapdragon 8 Gen 2,Hexagon,INT4;INT8;INT16;FP16,INT4 + micro-tile inferencing
+2023,Snapdragon 8 Gen 3,Hexagon,INT4;INT8;INT16;FP16,Gen-AI focus; on-device LLMs
+2024,Snapdragon 8 Elite,Hexagon,INT4;INT8;INT16;FP16,Oryon CPU; larger NPU
+2025,Snapdragon 8 Elite Gen 5,Hexagon,INT2;INT4;INT8;INT16;FP8;FP16,INT2 + FP8; ~80 TOPS
