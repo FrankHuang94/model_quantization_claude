@@ -480,7 +480,9 @@ surprises (the speed of the LLM-quantization wave, the revival of ternary via Bi
 unpredictable the details are. A reader should take from this section a well-supported sense of
 *direction* and an appropriately humble sense of *specifics*, which is the responsible posture for
 forecasting a field this dynamic. The confidence spectrum is itself a deliverable: knowing which
-predictions are solid and which are speculative is more useful than a list of equally-asserted forecasts.
+predictions are solid and which are speculative is more useful than a list of equally-asserted forecasts,
+and it is the discipline that separates a credible roadmap from wishful extrapolation in a field whose
+past has repeatedly outpaced its own forecasts.
 
 ## Synthesis
 
