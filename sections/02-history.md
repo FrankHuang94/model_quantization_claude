@@ -657,6 +657,44 @@ retention" claim is only as meaningful as the benchmark behind it; Section 15
 treats the benchmark landscape in detail, and Section 07 catalogues the failure
 modes that aggregate metrics hide.
 
+## Why open source drove the LLM-quantization era
+
+A structural difference between the INT8 and LLM eras is worth calling out because
+it shaped the pace of progress. INT8 quantization advanced largely inside company
+walls — Google (TFLite, the Jacob et al. scheme), NVIDIA (TensorRT), Intel
+(OpenVINO), and the mobile SoC vendors — with academic contributions feeding in.
+The LLM-quantization era, by contrast, was overwhelmingly **open**: GPTQ, AWQ,
+bitsandbytes, llama.cpp, QLoRA, and the frontier 2-bit methods were released as
+open code, often alongside the paper, and iterated in public. The reason is partly
+that open model weights (Llama, Mistral, Qwen, and others) created a shared
+substrate everyone could quantize and compare on, and partly that the community of
+GPU-poor researchers and hobbyists who *needed* quantization to run models at all
+was large, motivated, and collaborative.
+
+This openness had concrete consequences for the history. It compressed the
+research-to-adoption lag from years (INT8) to weeks (4-bit LLMs), because there was
+no productization step between "paper on arXiv" and "installable via pip." It made
+tooling quality, rather than benchmark leadership, the deciding factor in adoption,
+because users could and did try everything. And it meant the *reference*
+implementations were community-maintained rather than vendor-owned, which is why a
+handful of methods (GPTQ, AWQ, GGUF) became universal standards without any
+standards body declaring them so. The contrast with the FP4/microscaling frontier —
+which is being driven top-down by hardware vendors and the OCP standards process —
+is instructive: hardware-defined formats necessarily move at silicon speed and
+standards-committee speed, which is why the FP4 software ecosystem lags its hardware
+in a way the 4-bit integer ecosystem never did.
+
+The open-source dynamic also explains a persistent measurement problem the field
+still wrestles with: because anyone can publish a quantization of any model, the
+ecosystem is full of quantized checkpoints of *unknown provenance and quality*.
+A model labeled "4-bit GPTQ" might use group size 32 or 128, might or might not
+keep sensitive layers in higher precision, and might have been calibrated on an
+appropriate or inappropriate dataset — all of which materially affect accuracy but
+are rarely documented. The maturation of the field partly consists of the ecosystem
+slowly developing conventions (documented group sizes, standard calibration sets,
+published evaluation numbers) to tame this variance, a process Section 15's
+discussion of benchmarks and standardization picks up.
+
 ## Synthesis: what the history teaches
 
 Three durable lessons emerge from a decade of quantization research. First,
