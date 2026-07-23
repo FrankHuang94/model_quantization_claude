@@ -1,1 +1,17 @@
 entity,category,subcategory,technique_focus,precision_support,maturity,key_differentiator,notable_output,source_confidence,section_ref
+GPTQ,method,llm-quant,weight-only error-compensation PTQ,W4;W3,production-shipped,Hessian-based one-shot 4-bit weights,GPTQ paper + AutoGPTQ/GPTQModel,paper,05;16
+AWQ,method,llm-quant,activation-aware weight scaling,W4;W3,production-shipped,Protects salient weights; reorder-free kernels,AWQ paper + AutoAWQ,paper,05;16
+SmoothQuant,method,llm-quant,activation outlier migration,W8A8,production-shipped,Migrates activation outliers into weights,SmoothQuant paper,paper,05;16
+LLM.int8(),method,llm-quant,mixed-precision outlier decomposition,W8A8,production-shipped,No-loss INT8 via outlier FP16 path,bitsandbytes,paper,05;16
+NF4/QLoRA,method,llm-quant,non-uniform 4-bit + adapter finetune,W4,production-shipped,NormalFloat4 + single-GPU finetuning,QLoRA paper + bitsandbytes,paper,05;16
+GGUF k-quants,framework,llm-quant,hierarchical mixed-bit block quant,2-8 bit,production-shipped,Dominant local-LLM distribution format,llama.cpp,sdk-docs,05;16
+HQQ,method,llm-quant,fast calibration-free quant,W4;W3;W2,sdk-limited,Minutes-scale data-free quantization,HQQ release,sdk-docs,05;16
+SpQR,method,llm-quant,sparse outlier isolation,~3.5-bit,research-only,Near-lossless sub-4-bit via sparse outliers,SpQR paper,paper,05;16
+QuIP#,method,llm-quant,rotation + E8 lattice codebook,W2;W3,sdk-limited,SOTA 2-bit accuracy,QuIP# paper,paper,05;16
+AQLM,method,llm-quant,additive multi-codebook VQ,W2;W3,sdk-limited,Additive codebook 2-bit,AQLM paper,paper,05;16
+QuaRot/SpinQuant,method,llm-quant,rotation-enabled W4A4,W4A4,research-only,Rotations enable 4-bit activations,QuaRot/SpinQuant papers,paper,05;16
+KIVI/KVQuant,method,llm-quant,KV-cache quantization,KV 2-4 bit,production-shipped,Per-channel keys per-token values,KIVI/KVQuant papers,paper,05;16
+OmniQuant,method,llm-quant,learned equivalent transforms,W4A4;W4,sdk-limited,Learned scaling/clipping,OmniQuant paper,paper,05;16
+BitNet b1.58,method,llm-quant,quantization-native ternary training,1.58-bit,research-only,Trains ternary from scratch,BitNet paper (Microsoft),paper,04;05;16
+FP8 (E4M3/E5M2),format,numeric,low-bit floating point,W8A8 float,production-shipped,OCP standard 8-bit float,OCP FP8 spec,official-spec,04;16
+MXFP4,format,numeric,microscaling block FP4,W4A4 float,sdk-limited,Block FP with shared scale,OCP MX spec,official-spec,04;16

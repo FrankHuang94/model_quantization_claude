@@ -791,6 +791,29 @@ granularity, hardware-aligned formats) rather than any specific named method, be
 principles persist while the acronyms turn over. That is the through-line this section has
 tried to keep visible beneath the method zoo: the names change, the primitives do not.
 
+## Adoption snapshot: what production actually uses
+
+Cutting through the method zoo to what is genuinely deployed at scale in 2026: on the
+**server** side, the dominant configurations are 4-bit weight-only (GPTQ/AWQ via
+vLLM/TensorRT-LLM with Marlin-class kernels) for cost-optimized memory-bound serving, and
+FP8 weight+activation on FP8-capable GPUs for throughput-bound serving, both with
+quantized KV cache for long context. On the **local/desktop** side, GGUF k-quants via
+llama.cpp/Ollama/LM Studio are overwhelmingly dominant — the Q4_K_M and Q5_K_M variants in
+particular. On **mobile/edge**, weight-only 4-bit through vendor runtimes (QNN, Core ML,
+LiteRT) and MLX/llama.cpp is standard, with the vendor NPUs executing INT4/INT8. The
+sub-4-bit methods (QuIP#, AQLM), despite their research prominence, see limited production
+use — they appear mainly where memory is the hard constraint and slower kernels are
+acceptable. The rotation W4A4 methods are on the cusp of production as kernels mature. QAT
+and quantization-native training are used by a small number of teams deploying at
+aggressive bit-widths or building low-bit-native models. The gap between the research
+frontier (2-bit, W4A4, FP4) and production reality (4-bit weight-only + KV quantization)
+is the recurring theme of this database, and it is wide but closing — each year a bit more
+of the frontier crosses into production as tooling, kernels, and hardware catch up to the
+algorithms. For a practitioner, the safe reading is: the 4-bit weight-only cluster plus KV
+quantization is the boring, proven, near-universal choice, and anything more aggressive
+should be adopted deliberately, validated on the actual task, and confirmed to have fast
+kernels on the target — the frontier is real but it is still the frontier.
+
 ## Synthesis
 
 The LLM-quantization method zoo, for all its acronyms, reduces to a few recurring
