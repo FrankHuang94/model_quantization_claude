@@ -694,6 +694,69 @@ quantization for long context, escalate to W8A8/FP8 only if compute-bound, and r
 for sub-4-bit only when memory forces it and accuracy can absorb the hit. The vast
 majority of on-device LLM deployments are well-served by the 4-bit weight-only cluster.
 
+## Codebook quantization math: QuIP# and AQLM
+
+The 2-bit codebook methods are the most mathematically distinctive, and a brief
+treatment clarifies why they achieve their accuracy and pay their kernel cost. Uniform
+quantization represents each weight independently by rounding to a grid. **Vector
+quantization** instead represents a *group* of weights jointly by the nearest entry in a
+learned codebook — because it can place codebook entries anywhere in the group's
+high-dimensional space, it exploits correlations between weights that per-element rounding
+cannot, approaching the rate-distortion optimum. **QuIP#** uses a codebook based on the
+**E8 lattice** — the densest known sphere packing in 8 dimensions — so that 8-weight
+groups are quantized to lattice points that are, provably, near-optimally distributed;
+combined with the incoherence-inducing rotation (which makes the weights match the
+lattice's assumed distribution), this yields the best-known 2-bit accuracy. **AQLM** uses
+*additive* quantization: each weight group is the sum of vectors chosen from *multiple*
+codebooks, a richer representation (`M` codebooks of size `K` give `Kᴹ` effective code
+combinations) that captures more structure at the cost of `M` lookups and additions per
+group. The accuracy-per-bit of these methods is excellent — genuinely usable 2-bit
+models — but the decode is a table lookup (QuIP#) or several lookups plus additions
+(AQLM), which does not overlap with the matmul as cleanly as a scale-and-shift, hence
+their throughput cost. The tradeoff is fundamental: richer representations compress better
+but decode slower, and whether the trade is worth it depends on whether memory or speed is
+the binding constraint. For "fit a bigger model in fixed memory," codebooks win; for
+"decode as fast as possible," uniform 4-bit with a fast kernel wins.
+
+## On-device fine-tuning and personalization
+
+An emerging use of quantization methods on the edge is not just *inference* but *on-device
+adaptation* — personalizing a model to a user's data without sending it to a server, for
+privacy and latency. The QLoRA pattern is the enabler: keep the base model frozen in
+4-bit, train small LoRA adapters on-device from user interactions, and merge or apply them
+at inference. This is attractive because the frozen 4-bit base fits in device memory and
+the adapters are tiny (a few megabytes), so the incremental training cost is modest. The
+challenges are real — on-device training compute is limited, the interaction between
+adapter training and the frozen quantization error needs care (some methods specifically
+address the accuracy loss QLoRA's quantization introduces into the adapted model), and
+managing many per-user adapters has systems implications. But the direction is
+strategically important: it is the path to models that adapt to individuals while keeping
+data local, and it depends entirely on quantization to make the base model fit. Apple's
+and Qualcomm's on-device stacks (Sections 08–09) are building toward this, and it is a
+likely growth area (Section 14). The key insight is that quantization is not only a
+deployment-time compression but an *enabler of on-device learning*, because the memory it
+frees is what makes local adaptation feasible at all.
+
+## Evaluating and comparing quantized checkpoints
+
+Given the "quantized model of unknown quality" problem, the tooling and practice for
+*evaluating* quantized checkpoints has matured and deserves mention. The standard
+practice is to run the quantized model through the same task suites as the FP16 baseline
+(via harnesses like lm-evaluation-harness) and report the delta, not just the absolute
+score, so the quantization cost is isolated from the model's inherent capability.
+Perplexity on a held-out set is a quick sanity check but insufficient — a small perplexity
+delta can hide a large task delta, so task evaluation is essential. Increasingly,
+publishers of quantized checkpoints report the group size, method, protected layers,
+calibration set, and per-task deltas, which is what distinguishes a trustworthy
+quantization from a gamble. For practitioners, the workflow is: quantize with a documented
+recipe, evaluate on the *deployment-relevant* tasks (not generic benchmarks), compare the
+delta to a tolerance, and iterate on the knobs (group size, protected layers, method) if
+the delta is too large. This evaluation discipline — treating a quantization as a change
+that must be measured on the tasks that matter — is the single most important practice for
+avoiding the silent-capability-loss failure mode, and it is why the mature end of the
+ecosystem increasingly ships quantized checkpoints with published evaluation numbers
+rather than bare weights.
+
 ## Synthesis
 
 The LLM-quantization method zoo, for all its acronyms, reduces to a few recurring
