@@ -223,6 +223,162 @@ progress, engineering effort, and market forces that cannot be confidently predi
 claim is that the solved regimes (INT8, 4-bit weight-only) will remain stable and the frontier will keep
 advancing — the details of how far and how fast are genuinely uncertain.
 
+## The energy and sustainability driver
+
+An increasingly important force shaping quantization's future is **energy and sustainability**. AI's
+energy consumption — for both training and, at scale, inference — has become a significant concern, and
+quantization is one of the most direct levers for reducing it (Section 06's energy-per-byte argument).
+As AI deployment scales to billions of users and continuous/agentic workloads, the aggregate energy of
+inference becomes enormous, and the pressure to reduce it — for cost, for sustainability, and for the
+practical limits of power delivery and cooling — will intensify. This drives quantization forward on
+multiple fronts: more aggressive quantization to reduce per-inference energy, energy-efficient hardware
+(in-memory compute) that quantization enables, and energy-aware quantization that optimizes for joules
+rather than just accuracy or latency. The sustainability angle also connects to the edge: on-device
+inference (enabled by quantization) can be more energy-efficient than cloud inference for some workloads
+(no data-center overhead, no network transmission), making on-device quantized AI a sustainability play.
+Expect energy efficiency to become an increasingly explicit optimization target — quantization methods
+and hardware evaluated on energy-per-token and energy-per-inference, not just accuracy and latency — and
+expect the energy pressure to accelerate the adoption of aggressive quantization and efficient hardware.
+The energy driver is a structural force that will keep quantization strategically central: as long as AI
+energy consumption is a concern, quantization (the most direct lever on inference energy) will be
+important, and the pressure to reduce AI's energy footprint will push the quantization frontier forward.
+This is a confident structural prediction — the energy concern is real and growing, and quantization's
+role in addressing it is direct and well-established.
+
+## Agentic AI and sustained on-device inference
+
+A specific driver likely to shape the near-term roadmap is the rise of **agentic AI** — models that run
+autonomously over extended interactions, using tools, maintaining context, and generating long
+sequences. Agentic workloads have distinctive quantization implications. They involve *sustained*
+inference (not one-shot queries but ongoing operation), which amplifies the energy and cost pressures
+that quantization addresses — an agent running continuously must be efficient, making quantization
+essential. They involve *long context* (maintaining state across an interaction), amplifying the KV-cache
+quantization importance (Section 05). And on-device agents (the privacy-and-latency-favored form) must
+fit and run efficiently on the device, requiring aggressive quantization. The vendors have already begun
+framing their silicon around agentic AI (Qualcomm's 8 Elite Gen 5 agentic framing, Section 09), and the
+trend will likely intensify: as agentic AI becomes prominent, the demand for efficient sustained
+on-device inference — enabled by quantization — will grow, driving both more aggressive quantization and
+better KV-cache/long-context quantization. Agentic AI is thus a likely catalyst for the next phase of
+quantization adoption, particularly for the long-context and sustained-efficiency capabilities. It also
+connects to the on-device personalization trend (below) — an agent that adapts to a user is a
+personalization case — and to the energy driver (sustained inference amplifies energy concerns). The
+agentic-AI driver is a plausible (⚠️) but reasonably-confident near-term force, given the current
+industry momentum toward agentic capabilities and the vendors' explicit positioning around it.
+
+## On-device personalization and continual learning
+
+The roadmap includes the maturation of **on-device personalization** (Section 05/08) — models that adapt
+to individual users locally, for privacy and relevance. Quantization is the enabler (it fits the base
+model on-device, leaving room for personal adapters), and the trend will likely grow: on-device
+fine-tuning of adapters (QLoRA-style) on user data, continual adaptation, and personalized models that
+never send data to the cloud. This connects to several trends — Apple's adapter architecture (Section 08),
+the agentic-AI personalization case, and the privacy-driven on-device push. The technical challenges
+(on-device training compute, adapter-quantization interaction, managing personal adapters) are being
+addressed, and the capability will likely become more common within the window. On-device personalization
+is a compelling future direction because it combines privacy (data stays local), relevance (adapted to
+the user), and quantization's enabling role (fitting the base model), and it represents a qualitatively
+new use of quantization — not just deploying a fixed model efficiently but enabling *local learning*.
+Expect on-device personalization to grow from Apple's early adapter approach toward a broader capability
+across the on-device-AI ecosystem, with quantization as its foundation. This is a plausible (⚠️) trend
+whose pace depends on the on-device training tooling and the demand for personalization versus the
+convenience of cloud adaptation, but the direction — toward local, private, adaptive on-device AI enabled
+by quantization — is well-motivated.
+
+## The hardware evolution: what NPUs will look like
+
+The hardware side of the roadmap involves the continued evolution of NPUs and the possible mainstreaming
+of novel compute. Expect NPUs to (⚠️ speculative): add native support for the frontier formats (FP4/
+MXFP4 spreading from flagship to mainstream, possibly MXFP6/MXINT8, and refined sub-4-bit integer);
+increase memory bandwidth (the binding constraint for LLM decode, Section 06) via faster memory (LPDDR6
+and beyond) and better integration; add more transformer-specific hardware (the softmax/layernorm/KV-cache
+primitives AMD's XDNA2 pioneered becoming standard); and grow in raw capability (the TOPS race
+continuing, though TOPS remains a poor metric). The more speculative hardware evolution is the
+**mainstreaming of in-memory compute** (Section 13) — if the startups (d-Matrix, EnCharge) and the
+incumbents' research succeed, in-memory/near-memory compute could move from niche to significant,
+attacking the data-movement bottleneck more fundamentally than quantization alone and deepening the
+quantization-hardware co-design (in-memory compute demands low precision). The hardware evolution will
+continue to be driven by the memory-bandwidth and energy bottlenecks, with quantization support (native
+low-bit, hardware-aligned formats) a central design concern. The confident prediction is continued NPU
+evolution toward the frontier formats and better memory; the speculative one is the mainstreaming of
+in-memory compute, which would be a larger shift. Either way, the hardware will keep co-evolving with
+quantization, and the format frontier (FP4, MX, sub-4-bit integer) will spread from flagship to
+mainstream silicon over the window, following the diffusion pattern the whole database has documented.
+
+## Low-precision training as the next frontier
+
+While this database centers on inference quantization, a major forward trend is **low-precision
+*training*** — training models in FP8 and, increasingly, FP4 (Section 03/04). NVIDIA's Blackwell
+demonstrated FP4 training in the data center, and the trend will likely continue: as training costs
+dominate AI economics, training in lower precision to reduce cost and energy becomes attractive, and the
+numerics of low-precision training (stochastic rounding, loss scaling, mixed precision, the FP4/FP8
+formats) are an active research area. This matters for the edge/inference story in two ways. First,
+models trained in low precision may be more amenable to low-precision inference (they have already
+adapted to reduced precision), potentially easing the inference-quantization problem. Second, the
+quantization-native training direction (BitNet) is a form of low-precision training that produces
+natively-low-bit *inference* models — blurring the training-inference boundary. Expect low-precision
+training to advance (FP8 mainstream, FP4 growing) in the data center, with implications flowing to the
+edge (models trained low-precision, and the quantization-native direction). The low-precision-training
+frontier is primarily a data-center story near-term but connects to edge inference through the models it
+produces and the quantization-native paradigm it enables. It is a confident (⚠️) trend — low-precision
+training is already happening and the economic pressure (training cost) is strong — whose edge
+implications will unfold over the window as the models it produces reach deployment.
+
+## Wildcards and risks to the roadmap
+
+An honest forward view includes the wildcards and risks that could change the trajectory. **A
+quantization-native breakthrough** (BitNet scaling successfully) could accelerate the roadmap
+dramatically, making extreme low-bit mainstream faster than the gradual projection suggests — an upside
+wildcard. Conversely, **the accuracy cliff proving fundamental** — if sub-4-bit turns out to have
+irreducible accuracy costs on important capabilities that no method can overcome — would slow the
+descent, keeping 4-bit as the durable floor longer than projected. **A format-standardization failure**
+(if the MX formats do not achieve broad adoption, or fragment) would prolong the tooling fragmentation.
+**A hardware surprise** (in-memory compute maturing faster or slower than expected) would shift the
+hardware roadmap. **Geopolitical developments** (Section 11's bifurcation intensifying, or easing) would
+reshape the ecosystem's structure. And **a shift in AI's direction** (if models move away from the
+current transformer-LLM paradigm) could change what quantization needs to address. These wildcards mean
+the roadmap is genuinely uncertain, and the projections should be held loosely. The most likely single
+surprise is on the quantization-native-training front (the highest-uncertainty, highest-impact
+direction), but any of the wildcards could materialize. The honest position is that the *direction*
+(continued descent, deeper co-design) is well-supported, but the *pace and details* are subject to these
+wildcards, and confident specific predictions are unwarranted. Acknowledging the wildcards is part of the
+confidence discipline — the future of a fast-moving field is inherently uncertain, and a responsible
+roadmap says so.
+
+## The long view: beyond 5 years
+
+Looking beyond the 5-year window (⚠️ highly speculative), the deeper trajectory is toward quantization
+becoming so integrated into the model-hardware co-design that it ceases to be a distinct "step" and
+becomes an intrinsic property of how models are built and run. In this long view, models would be
+designed, trained, and deployed in a unified low-precision co-design pipeline (architecture designed for
+quantizability, trained quantization-native, deployed on hardware whose native format matches),
+automated tools would handle the optimization, and the concept of "quantizing a model" as a separate
+post-training operation would largely disappear — replaced by models that are natively efficient by
+design. The hardware would be co-designed around whatever precision the models use (possibly in-memory
+compute at extreme low precision), and the energy efficiency would be dramatically better than today's.
+This is a speculative long-term vision, not a prediction, but it is the logical endpoint of the co-design
+trend: the merging of quantization with architecture, training, and hardware into a unified efficient-AI
+pipeline. Whether and when this materializes is unknown, but the direction — toward integration and away
+from quantization as a separate step — is the deep current beneath the near-term roadmap. The long view
+underscores that quantization is not a transient optimization but a fundamental and permanent aspect of
+efficient AI: as long as there is a gap between the models we want and the hardware we have, closing that
+gap through reduced precision — increasingly by design rather than after the fact — will remain central.
+
+## What would change the trajectory
+
+To close the forward view, it is worth stating what developments would most change the projected
+trajectory, as signposts to watch. **Quantization-native training scaling** (BitNet at frontier size,
+holding on reasoning) would be the biggest accelerant, potentially making extreme low-bit mainstream. A
+**breakthrough in codebook-method kernels** (fast 2-bit decode) would accelerate sub-4-bit adoption.
+**Broad MX-format hardware adoption** would consolidate the format landscape and simplify the stack.
+**In-memory-compute productization at scale** would shift the hardware roadmap and deepen quantization's
+centrality. **A new dominant model architecture** (post-transformer) would change what quantization
+addresses. And **regulatory or energy pressures** (mandates or costs pushing efficiency) would accelerate
+adoption. Watching these signposts gives the best read on whether the roadmap is tracking the
+conservative, likely, or optimistic scenarios. The field moves fast (Section 12), so these developments
+could arrive sooner than expected, and the roadmap should be revisited as they do. The signposts are the
+practical way to track the future: rather than committing to specific predictions, watch for these
+developments, and update the expected trajectory as they materialize or fail to.
+
 ## Synthesis
 
 The next 3–5 years of quantization will likely see the production bit-width floor continue descending
