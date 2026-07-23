@@ -313,6 +313,202 @@ accuracy). The recurring lesson is that "the model quantized fine in PyTorch" sa
 about how it runs on the target until it has been through the target's compiler and
 measured on the device.
 
+## Dataflow: how matrix engines move data
+
+Beyond the precision of a matrix engine, its **dataflow** — the pattern by which weights,
+activations, and partial sums move through the array — determines its efficiency, and it
+interacts with quantization. The canonical taxonomy (from the Eyeriss line of research)
+distinguishes:
+
+- **Weight-stationary**: weights are loaded into the array and held while activations
+  stream through, reusing each weight across many activations. Efficient when weights are
+  reused heavily (large batch or large spatial dimensions). Most systolic arrays are
+  weight-stationary or a variant. For quantized inference, weight-stationary designs
+  benefit doubly from weight quantization: fewer bits to load into the stationary array,
+  and the loaded weights are reused, amortizing the load.
+- **Output-stationary**: each output's accumulator stays in place while inputs stream,
+  minimizing partial-sum movement. Good for deep reductions.
+- **Row-stationary / hybrid**: balances reuse of weights, activations, and partial sums,
+  as in Eyeriss, optimizing overall data movement.
+
+Why this matters for quantization: the *dominant cost is data movement, not arithmetic*
+(the next subsection quantifies this), so a dataflow that maximizes reuse of the quantized
+operands minimizes the number of expensive DRAM accesses. When a workload is memory-bound
+(LLM decode), the weights cannot be reused much (batch size ~1), so no dataflow saves the
+day — only reducing the *bytes per weight* (quantization) helps, which is why weight-only
+quantization is the LLM lever regardless of dataflow. When a workload is compute-bound
+(vision, large-batch), a good dataflow keeps the quantized operands on-chip and the
+low-precision arithmetic fast, compounding the quantization benefit. The dataflow and the
+quantization scheme are thus co-dependent: the best combination keeps low-precision
+operands resident and reused, and the compiler's tiling decisions (which choose the
+effective dataflow for each layer) must respect the quantization block structure.
+
+## The on-chip memory hierarchy
+
+Every accelerator has a memory hierarchy — registers, on-chip SRAM buffers, and off-chip
+DRAM — with each level roughly an order of magnitude larger, slower, and more
+energy-costly to access than the one above. The entire game of efficient inference is
+keeping data in the fast levels and minimizing traffic to DRAM. Quantization helps at
+every level: 4-bit weights take a quarter the SRAM of FP16, so more of the model fits
+on-chip, more can be reused before eviction, and less must be re-fetched from DRAM. A
+model that fits entirely in on-chip SRAM (small models, tinyML) avoids DRAM almost
+entirely — the ideal case — and quantization is what makes a given model fit. For large
+models that cannot fit on-chip, quantization reduces the DRAM traffic proportionally,
+which for the memory-bound decode case translates directly to speed.
+
+The **tiling** the compiler performs is precisely the management of this hierarchy: it
+breaks large matmuls into tiles sized to fit the on-chip buffers, so each tile's operands
+are loaded once, fully reused, and evicted. Quantization block sizes interact with tiling
+— a per-group scale boundary that does not align with a tile boundary complicates the
+kernel, which is another reason the MX formats fix a hardware-friendly block size (32) that
+tiles cleanly. The memory hierarchy is also why *fusion* matters so much: a fused
+matmul-bias-requant-activation keeps intermediates in registers/SRAM instead of writing
+them to DRAM and reading them back, and an unfused graph pays the DRAM round-trip at every
+operator boundary. The compiler's job is to make the quantized model's data movement fit
+the hierarchy, and quantization's job is to make the data small enough that it can.
+
+## The energy cost of data movement
+
+The physical reason quantization matters so much is energy asymmetry, and the numbers are
+stark. In a modern process, an integer multiply-accumulate costs on the order of a
+picojoule or less, but moving a single 32-bit word from off-chip DRAM costs on the order of
+hundreds of picojoules to nanojoules — **two to three orders of magnitude more than the
+computation it feeds**. Moving data from on-chip SRAM is cheaper than DRAM but still costs
+far more than the MAC. This asymmetry means that for the energy budget of an edge device,
+*the bytes you move dominate the joules you spend*, and quantization — which reduces bytes
+moved proportionally to the bit-width reduction — is first and foremost an *energy*
+optimization. A 4-bit weight moves a quarter the bytes of a 16-bit weight, saving roughly
+a quarter the (dominant) data-movement energy, which is why quantization extends battery
+life and reduces thermal throttling as much as it speeds inference. This is also why
+in-memory computing (below) is pursued: it attacks the data-movement energy directly by
+computing where the data lives. Section 07 quantifies the energy-efficiency gains of
+quantization across bit-widths; the point here is the mechanism — data movement is the
+energy bottleneck, and fewer bits means fewer bytes moved means less energy, at every
+level of the hierarchy.
+
+## Requantization in hardware, in detail
+
+The requantization step — narrowing a wide INT32 accumulator back to the low-precision
+input of the next layer — is a small but pervasive piece of hardware/software co-design
+worth understanding, because it is where the per-layer scales physically meet. After an
+INT8 matmul accumulates into INT32, the result must be scaled by the combined factor
+`s_input · s_weight / s_output` and rounded to the next layer's integer range. Doing this
+in floating point would defeat the integer pipeline, so the Jacob et al. scheme (Section
+02) approximates the real-valued scale as a fixed-point multiplier and a bit-shift: the
+INT32 accumulator is multiplied by an integer and right-shifted, with rounding. Hardware
+provides this as a fast fixed-point "requantize" operation. Per-channel and per-group
+quantization complicate it — there is a different scale per channel or group, so the
+requantization multiplier varies across the output, which the hardware must support
+efficiently. The efficiency and flexibility of the requantization unit (does it support
+per-channel scales? per-group? asymmetric zero-point correction?) is a real hardware
+differentiator that spec sheets rarely mention but that determines which quantization
+schemes run fast. A subtle correctness issue also lives here: the compiler's requantization
+rounding must match what the quantization tool assumed, or accuracy drifts — one of the
+listed failure modes — which is why validating the *compiled* model's accuracy on-device is
+non-negotiable.
+
+## Quantization-aware compilation techniques
+
+Modern compilers do more than map operators one-to-one; several techniques specifically
+serve quantized models:
+
+- **Fusion patterns** for quantized graphs: matmul+bias+requant+activation, conv+BN+relu
+  (with BN pre-folded), and attention-block fusions that keep the quantized intermediates
+  on-chip.
+- **Layout transformation**: choosing the memory layout (channel ordering, tiling, weight
+  packing) that matches the matrix engine's access pattern — 4-bit weights are packed two
+  per byte in a layout the kernel can unpack efficiently, and getting this wrong forces
+  slow unpacking.
+- **Autotuning**: compilers like TVM search over kernel implementations (tile sizes,
+  unroll factors, vectorization) to find the fastest for a given operator/shape/precision
+  on the target — important because the optimal kernel for a quantized matmul differs from
+  the FP one.
+- **Mixed-precision scheduling**: placing the precision transitions (INT8 island → FP16
+  softmax → INT8 island) to minimize conversion overhead, and deciding which processor
+  runs each island.
+- **Graph-level precision propagation**: inferring the precision of intermediate tensors
+  from the Q/DQ annotations and propagating them so the whole graph is consistently typed.
+
+These techniques are why a good compiler extracts far more performance from the same
+quantized model than a naive one, and why the vendor compilers (which know their silicon's
+kernels and layouts) usually beat portable compilers on their home hardware — a tension
+between performance and portability that the MLIR convergence hopes to ease.
+
+## Batching, arithmetic intensity, and the memory-compute crossover
+
+A crucial systems subtlety: whether a workload is memory- or compute-bound is not fixed by
+the model but by the *batch size* and sequence handling, which changes the optimal
+quantization strategy. LLM **decode** at batch size 1 is deeply memory-bound (each token
+re-reads all weights for one token's worth of compute), so weight-only quantization is the
+lever. As the **batch size grows** (a server batching many requests), the same weights are
+reused across many tokens in a single weight load, arithmetic intensity rises, and the
+workload drifts toward compute-bound — at which point *activation* quantization (W8A8/FP8)
+starts to matter because the compute becomes the bottleneck. LLM **prefill** (processing a
+long prompt) is compute-bound even at batch 1 because it processes many tokens in parallel.
+This is why server serving with continuous batching may favor FP8 W8A8 (compute speedup
+across the large effective batch) while the same model on a phone at batch 1 favors 4-bit
+weight-only (memory speedup). The crossover point — the batch size at which a workload
+moves from memory- to compute-bound — is a key systems quantity, and the roofline is the
+tool for reasoning about it. The practical upshot: the "right" quantization scheme depends
+not just on the model and hardware but on the *serving regime*, and a scheme optimal for
+on-device single-stream inference may be suboptimal for batched server serving of the same
+model.
+
+## In-memory and analog computing
+
+The most radical response to the data-movement bottleneck is **compute-in-memory (CIM)**:
+performing the multiply-accumulate operations *inside* or immediately adjacent to the
+memory array where the weights are stored, so the weights never move. Analog CIM uses the
+physics of memory cells (resistive RAM, flash, SRAM) to compute a matrix-vector product in
+the analog domain — the bit-line currents sum the products — in a single step, potentially
+orders of magnitude more energy-efficient than digital MAC arrays for the dominant matmul.
+CIM has a natural affinity with quantization: analog computation has limited precision (the
+analog-to-digital converters and device variability effectively quantize), so CIM is
+inherently a low-precision paradigm, and quantization-aware training that targets the CIM
+array's effective precision is essential to accuracy. Several startups (Section 13) and
+research groups pursue analog and digital CIM. The maturity is 🔴→🟡: digital
+near-memory compute is appearing in products, but analog CIM at scale faces challenges
+(ADC overhead, device variability, programming energy) that keep it largely research-stage
+for now. It is, however, one of the most-watched directions because it attacks the
+fundamental energy bottleneck that quantization only mitigates — and if it matures, it
+would make ultra-low-precision quantization not just beneficial but *mandatory*, since the
+analog substrate is intrinsically low-precision.
+
+## The economics and design of NPU silicon
+
+A brief note on why the hardware landscape looks the way it does. Designing an NPU
+involves choosing which precisions to support in silicon, and each supported format costs
+area (datapaths, requantization units) and verification effort. Vendors provision formats
+*ahead* of demand because silicon design cycles run two to three years and being late to a
+format that becomes important (as INT4 did for LLMs) is costlier than the area of
+supporting one that turns out niche. This is why flagship silicon accumulates format
+support (Qualcomm's INT2/FP8 in 2025) before the software widely uses it — the recurring
+hardware-ahead-of-software pattern is a rational response to long design cycles and format
+uncertainty. It also explains the *breadth* strategy of leaders like Qualcomm (support
+every plausible format so no software direction is foreclosed) versus the *focus* strategy
+of others (Google's INT8-centric Edge TPU, betting on a narrower format set for
+efficiency). For a buyer, the implication is that flagship silicon's format breadth is
+partly future-proofing that current software cannot yet exploit — real, but not immediately
+cashable, which is why the maturity and confidence flags on new-format support matter.
+
+## Runtime and deployment stacks
+
+Finally, below the compiler sits the **runtime** that loads the compiled engine and
+executes it on-device, managing the heterogeneous processors, memory allocation, and the
+NPU/GPU/CPU partitioning at execution time. The major edge runtimes — TensorFlow Lite /
+LiteRT, Core ML, ONNX Runtime (with its execution providers, including NPU providers),
+Qualcomm's QNN runtime, ExecuTorch, MLX, and llama.cpp — each mediate between the compiled
+model and the silicon, and each has its own supported-operator and supported-precision
+envelope. The runtime is where the fallback decisions of the "heterogeneous execution"
+discussion actually happen, and its quality (how well it keeps work on the NPU, how
+efficiently it handles precision islands and data transfers) materially affects real
+performance. For a deployment, the full stack — quantization tool → exchange format →
+compiler → runtime → silicon — must all support the chosen scheme end to end, and a gap
+at any layer (an unsupported precision in the runtime even if the compiler emitted it)
+breaks the fast path. This end-to-end dependency is the practical face of co-design: it is
+not enough for the algorithm and the silicon to be compatible; every layer between them
+must be too.
+
 ## Summary
 
 Hardware–software co-design is where quantization theory meets physical reality. The
