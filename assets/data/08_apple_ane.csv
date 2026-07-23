@@ -1,0 +1,15 @@
+year,chip,line,tops_vendor,ne_cores
+2017,A11,iPhone,0.6,2
+2018,A12,iPhone,5.0,8
+2019,A13,iPhone,6.0,8
+2020,A14,iPhone,11.0,16
+2020,M1,Mac,11.0,16
+2021,A15,iPhone,15.8,16
+2022,A16,iPhone,17.0,16
+2022,M2,Mac,15.8,16
+2023,A17 Pro,iPhone,35.0,16
+2023,M3,Mac,18.0,16
+2024,A18,iPhone,35.0,16
+2024,M4,Mac,38.0,16
+2025,A19,iPhone,40.0,16
+2025,M5,Mac,45.0,16
