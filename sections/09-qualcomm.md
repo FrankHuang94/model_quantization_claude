@@ -355,6 +355,91 @@ quantization strategy are thus tightly linked: selling silicon to a broad ecosys
 open, disclosed, well-tooled quantization support, which Qualcomm provides, reinforcing its
 position as the mobile quantization platform.
 
+## Developer experience and the tooling learning curve
+
+The developer experience on Qualcomm silicon reflects the OEM/ecosystem model: more control
+and more disclosure than Apple, but a steeper learning curve. A developer quantizing for
+Snapdragon typically uses AIMET to produce an accurately-quantized model (choosing DFQ/AdaRound
+PTQ or QAT, configuring granularity and mixed precision), then deploys via QNN (maximum
+performance, but a lower-level SDK requiring understanding of the Hexagon execution model) or
+via Qualcomm AI Hub (which automates much of the optimization and compilation, lowering the
+barrier). The QNN path rewards expertise with performance but demands it; the AI Hub path
+trades some control for accessibility, which is precisely why Qualcomm built it — the low-level
+SDK's learning curve was a real adoption barrier. Portable entry points (ONNX Runtime's QNN
+execution provider, LiteRT delegates) let developers start from familiar tooling at some
+performance cost. Compared to Apple's single high-level abstraction (Core ML), Qualcomm offers
+a spectrum from low-level control (QNN) to high-level convenience (AI Hub), which suits its
+diverse ecosystem of sophisticated OEMs and ordinary app developers but means there is no
+single "right" path — the choice depends on the developer's performance needs and expertise.
+The tooling maturity is high, but the surface area is larger than Apple's, reflecting the
+different business model. For a developer, the practical guidance is: use AIMET for
+quantization, start with AI Hub for accessibility, and drop to QNN when maximum performance
+justifies the added integration effort.
+
+## Competitive comparison: Qualcomm, Apple, and MediaTek
+
+A direct comparison sharpens Qualcomm's position among the mobile leaders (MediaTek is
+Section 10):
+
+| Dimension | Qualcomm | Apple | MediaTek |
+|---|---|---|---|
+| NPU | Hexagon (DSP-derived) | Neural Engine | APU |
+| Disclosed precision breadth | INT2–FP16 + FP8 (broadest) | INT4 + palettization (opaque) | INT4–FP16 + emerging |
+| Quantization tooling | AIMET (research-backed) | Core ML Tools | NeuroPilot |
+| Quantization research | Top-tier (DFQ, AdaRound) | Applied, less published | Growing |
+| Business model | Silicon + SDK to OEMs | Whole-stack, own devices | Silicon + SDK to OEMs |
+| Disclosure | High (platform briefs) | Low (opaque ANE) | Medium |
+| Deployment accessibility | QNN + AI Hub (spectrum) | Core ML (single abstraction) | NeuroPilot |
+| Cross-market stack | AI Stack (mobile→auto→XR) | Apple devices only | Mobile-focused, expanding |
+
+The comparison positions Qualcomm as the **disclosure-and-breadth-and-research leader** among
+the three: it supports and discloses more precision formats than Apple, backs its tooling with
+original research neither of the others matches, and spans more markets via the AI Stack. Its
+relative weakness is the tooling learning curve (addressed by AI Hub) versus Apple's simpler
+abstraction. MediaTek (Section 10) competes closely on silicon but with less research depth and
+narrower disclosed format leadership. The three-way comparison recurs in Sections 10–11; the
+Qualcomm takeaway is breadth plus research depth plus cross-market reach.
+
+## Case study: Stable Diffusion on a Snapdragon phone
+
+Qualcomm's 2023 demonstration of Stable Diffusion running entirely on a Snapdragon phone is
+worth dissecting as a quantization achievement. Stable Diffusion is compute-heavy (a large
+U-Net run over dozens of denoising steps) and, as Section 03/07 noted, diffusion models are
+sensitive to quantization because per-step error compounds over the denoising trajectory.
+Qualcomm quantized the model to INT8 (with careful handling to preserve image quality across
+steps) and ran it on the Hexagon NPU, generating an image in under a second — a workload
+previously requiring a data-center GPU. The achievement illustrates several themes: INT8
+quantization (rather than aggressive sub-8-bit) was the right choice for the quantization-
+sensitive diffusion model (Section 07's use-case table), the Hexagon NPU's native INT8 compute
+provided the throughput (a compute-bound workload, so the compute path mattered, unlike
+memory-bound LLM decode), and the co-design of quantization scheme, NPU capability, and model
+structure made the previously-impossible possible on a phone. It also demonstrated Qualcomm's
+strategy of using headline on-device generative-AI demos to validate its quantization stack.
+The performance figures are vendor-produced (⚠️), but the existence proof — a full diffusion
+model running on-device via INT8 quantization and the Hexagon NPU — is the meaningful result,
+and it presaged the on-device image-generation features that followed across the industry.
+
+## Beyond mobile: automotive, XR, and always-on sensing
+
+Qualcomm's quantization reach extends well beyond phones through the AI Stack, and these markets
+have distinctive quantization constraints. **Automotive** (Snapdragon Ride) runs perception and
+increasingly generative/assistant models under strict safety, latency, and power constraints,
+where quantization is essential but the safety-criticality (Section 07) demands careful,
+conservative, well-validated schemes — a domain where the fairness and rare-case-degradation
+concerns of Section 07 are acute (a perception model must not degrade on rare-but-critical
+objects). **XR (extended reality)** (Snapdragon XR) has extreme power and latency constraints
+(all-day wearable, low-latency for comfort), making quantization mandatory for the on-device
+vision, tracking, and increasingly AI-assistant workloads. **Always-on sensing** via the
+Snapdragon Sensing Hub runs tiny quantized models (INT8/INT4, sometimes lower) continuously for
+wake-word, audio, and activity detection within a microwatt-to-milliwatt budget — the tinyML
+regime where quantization is existential (the model must fit and run within the power budget or
+not exist). Across these markets, the common thread is that quantization is the enabling
+technology for on-device AI under tight constraints, and Qualcomm's unified tooling and
+broad-precision NPU apply across all of them. This breadth means Qualcomm's quantization
+influence spans the edge-computing landscape, and its precision choices propagate across
+markets far beyond the phone — reinforcing its role as a de-facto quantization platform for the
+edge.
+
 ## Master database contributions
 
 This section contributes: Qualcomm (chipmaker, Hexagon NPU), AIMET (framework/PTQ+QAT tool),
