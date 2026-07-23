@@ -563,6 +563,40 @@ selection is matching each role to its best-fit representation within the constr
 of what the target silicon can execute, which is precisely the co-design problem the
 next sections develop.
 
+## Reading a spec sheet: what a format claim actually means
+
+Because the vendor sections that follow lean heavily on published format support, it
+is worth codifying how to read a format claim critically — the gap between "the spec
+sheet lists INT4" and "you can deploy an accurate INT4 model that runs fast" is wide
+and populated with caveats:
+
+- **"Supports INT4"** may mean native INT4 matrix units (real compute speedup) or
+  INT4 *storage* that unpacks to INT8 for compute (memory saving only). Ask which.
+- **"N TOPS (INT8)"** is a peak-throughput figure at a specific precision under ideal
+  utilization; real workloads reach a fraction of it, and the number is not comparable
+  across vendors with different precisions, sparsity assumptions, and measurement
+  methods. TOPS is a marketing scalar, not a performance predictor.
+- **"FP8 support"** rarely specifies whether both E4M3 and E5M2 are supported, whether
+  the accumulation is FP16 or FP32, and whether the software stack exposes it — all of
+  which determine usability.
+- **Granularity is usually unstated.** A chip may support INT4 only per-tensor, or
+  per-group with a fixed group size that may not match your quantized model's group
+  size, forcing repacking. Native per-group support (or MX-format support) is the
+  question that actually matters for accuracy.
+- **Symmetric vs. asymmetric** support is often omitted; a symmetric-only datapath
+  changes which quantization schemes are usable.
+- **Software exposure lags silicon.** A format present in hardware may not be reachable
+  through the vendor's compiler/SDK for one or more releases — the recurring
+  hardware-ahead-of-software gap.
+
+The disciplined reading, applied throughout Sections 08–11: treat a format on a spec
+sheet as *necessary but not sufficient* evidence of deployability, seek the
+granularity and datapath details, distinguish storage support from compute support,
+and discount peak-throughput scalars in favor of measured, independent benchmarks
+where they exist. This is why every hardware claim in this database carries a maturity
+tag and, for anything unreleased or unverified, a confidence flag — the spec sheet is
+the starting point of the analysis, not the end of it.
+
 ## Summary
 
 Numeric formats divide into uniform integer types (cheap hardware, uniform
