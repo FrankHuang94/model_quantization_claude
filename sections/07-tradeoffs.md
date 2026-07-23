@@ -450,6 +450,49 @@ failures. This measurement discipline is what turns quantization from a gamble i
 engineering decision, and it is the methodological backbone that every recommendation in this
 section assumes.
 
+## The model-size interaction: bigger models quantize better
+
+A crucial and somewhat counterintuitive feature of the tradeoff is that it *improves with
+model size*: larger models tolerate more aggressive quantization than smaller ones at the
+same bit-width. A 70B model at 4-bit loses proportionally less capability than a 7B model at
+4-bit, and 2-bit becomes far more viable at 70B+ than at 7B. The reason is redundancy — larger
+models have more parameters than strictly necessary to represent their function, so there is
+more slack to absorb quantization noise, whereas a small model's parameters are each doing
+more work and have less margin. This interaction has strategic consequences for the tradeoff.
+It means the *right* way to fit a memory budget is often "a large model quantized aggressively"
+rather than "a small model quantized mildly" — a 4-bit 13B model may beat an 8-bit 7B model at
+similar memory, because the larger model's extra capability survives the harder quantization.
+It also means quantization and scale are complementary: as models grow, the bit-width that is
+"safe" drops, so the frontier of viable low-bit quantization advances partly by riding the
+growth in model size. And it complicates cross-method comparison — a method's "accuracy
+retention" depends heavily on the model size it was measured on, so a 2-bit result on a 70B
+model does not imply the same method works at 2-bit on a 7B model. For the practitioner, the
+takeaway is to consider the model-size-and-bit-width choice *jointly* rather than fixing the
+model and then quantizing: within a fixed memory budget, there is a frontier of (size,
+bit-width) combinations, and the best point is often more aggressive on bits and larger on
+parameters than intuition suggests, subject as always to validation.
+
+## Latency percentiles and quality of service
+
+The latency tradeoff has a distributional dimension that averages hide and that matters for
+user-facing systems. What users experience is not mean latency but the *tail* — the p95 or
+p99 latency, and the consistency of the token rate during generation. Quantization affects
+this distribution, not just its mean. On the positive side, by fitting more of the model in
+fast memory and reducing bandwidth pressure, quantization can make latency *more consistent*
+(fewer bandwidth-contention stalls). On the risk side, if a quantized scheme causes occasional
+fallbacks (Section 06) — some inputs hitting an unsupported path — it can *worsen* the tail
+even if the mean improves, producing an inconsistent experience that is worse for users than a
+uniformly-slower one. For interactive generation, the relevant quality-of-service metric is
+often "time to first token" (dominated by prefill, a compute-bound phase where
+weight+activation quantization helps) plus "inter-token latency" (dominated by decode, a
+memory-bound phase where weight-only quantization helps) — and a good deployment optimizes
+both phases, potentially with different quantization strategies for each. The lesson is that
+the latency tradeoff should be evaluated as a distribution and by phase, not as a single
+average, because the user-perceived quality lives in the tail and in the consistency, and a
+quantization that improves the average while worsening the tail can be a net negative for
+experience. This distributional view is part of measuring the tradeoff credibly, and it is why
+serving systems track latency percentiles rather than means.
+
 ## The honest bottom line
 
 Quantization's tradeoff is, for the common cases, extraordinarily favorable — INT8 and
