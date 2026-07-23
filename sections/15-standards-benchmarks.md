@@ -182,6 +182,171 @@ carry maturity and confidence tags — the tags encode exactly this distinction 
 independently verified (MLPerf, published papers, open tooling) and what is vendor-asserted (TOPS,
 favorable demos, unreleased-format claims).
 
+## MLPerf mechanics in depth
+
+MLPerf's design deserves deeper treatment because its methodology is what makes it credible, and
+understanding it clarifies why it is trustworthy where raw vendor numbers are not. MLPerf Inference
+defines a set of **standardized tasks** (image classification on ResNet/ImageNet, object detection,
+LLM tasks on defined models, recommendation, etc.), each with a **reference model** and a **required
+accuracy target** (typically 99% or 99.9% of the FP32 reference accuracy). A submission runs the task
+and must *meet the accuracy target* — quantization is allowed (and universal), but a submission that
+quantizes so aggressively that it falls below the accuracy target is invalid. This is the crucial
+design choice: by coupling performance measurement to an accuracy floor, MLPerf measures **real
+performance at a real accuracy bar**, capturing the quantization tradeoff honestly rather than letting
+submitters trade away accuracy for throughput unmeasured. MLPerf also defines **scenarios** (single-
+stream, multi-stream, server, offline) that model different deployment patterns (latency-critical vs.
+throughput-critical), and **divisions** — the **closed division** (strict rules, comparable results,
+using the reference model) and the **open division** (more flexibility, allowing model changes, less
+directly comparable). For quantization specifically, the closed division's requirement to meet the
+accuracy target on the reference model with defined rules is what makes cross-vendor comparison
+meaningful. The submission process is rigorous (results are reviewed, and there is a period for
+submitters to inspect each other's submissions), which adds credibility. The limitations remain
+(voluntary participation, the benchmarks lagging the fastest workloads, the complexity of interpreting
+results across configurations), but the accuracy-constrained, standardized, peer-reviewed design makes
+MLPerf the gold standard for *credible* AI-performance comparison, and it is why the database treats
+MLPerf results as high-confidence where they exist. The contrast with vendor TOPS could not be
+sharper: TOPS is a peak-throughput number at no defined accuracy, while MLPerf is real throughput at a
+required accuracy — the difference between a marketing scalar and a meaningful measurement.
+
+## The TOPS problem in depth
+
+Because vendor TOPS claims dominate the marketing discourse and this database repeatedly flags them, a
+fuller treatment of *why* TOPS is nearly useless for cross-vendor comparison is warranted. **TOPS
+(tera-operations per second)** is a peak-throughput figure — the maximum number of operations the
+hardware can perform per second under ideal conditions. It is misleading for several compounding
+reasons. First, it is **precision-dependent**: a chip's TOPS at INT4 is higher than at INT8 (more
+operations per cycle at lower precision), so a headline TOPS number without a specified precision is
+meaningless, and vendors often quote the highest-precision-lowest number (INT4 or lower) for the
+biggest figure. Second, it is a **peak, not achieved, number**: real workloads reach a fraction of
+peak (often 20-50%) due to memory bottlenecks, utilization inefficiencies, and the workload's actual
+arithmetic intensity (Section 06's roofline) — a chip with high peak TOPS but low memory bandwidth will
+badly underperform its TOPS on the memory-bound LLM-decode workload. Third, it **ignores accuracy**:
+TOPS says nothing about whether the quantized model running at that throughput is accurate. Fourth, it
+is **not measured consistently** across vendors (different assumptions about sparsity, utilization,
+precision), so cross-vendor TOPS comparison is apples-to-oranges. The upshot, stated plainly: **a chip's
+TOPS number tells you almost nothing about how fast it will run your actual quantized model**, and
+comparing two vendors' TOPS is nearly meaningless. What matters instead is memory bandwidth (for the
+memory-bound LLM case), native precision support, achieved throughput at a real accuracy bar (MLPerf),
+and on-device measurement of the actual workload. This is why the database flags every TOPS claim, why
+Section 06 emphasized memory bandwidth over TOPS, and why the "representative results" chart above uses
+clearly-labeled illustrative values rather than pretending to a precision the available data does not
+support. TOPS is the single most over-cited and least-useful number in the edge-AI marketing landscape,
+and understanding why is essential to reading vendor claims critically.
+
+## A brief history of AI benchmarking
+
+The current benchmark landscape is the product of an evolution worth sketching. Early neural-network
+benchmarking was **accuracy-only** — the ImageNet leaderboard, reporting top-1/top-5 accuracy, with no
+standardized *performance* measurement. As deep learning moved to production and efficiency mattered,
+**performance benchmarks** emerged, initially vendor-specific and non-comparable (each vendor published
+its own numbers). **MLPerf** launched (2018, by MLCommons) to bring standardized, credible,
+cross-vendor benchmarking, addressing the non-comparability of vendor numbers — its accuracy-constrained
+design was a direct response to the gaming-by-accuracy-loss problem. Mobile-specific benchmarks
+(AI-Benchmark from ETH Zurich, later Geekbench AI, MLPerf Mobile) emerged as mobile NPUs proliferated.
+The LLM era brought **quality benchmarks** for generative models (the task suites — MMLU, GSM8K,
+HumanEval — aggregated by harnesses like lm-eval-harness) as accuracy measurement became more complex
+(perplexity insufficient, Section 05). The AI-PC era brought client benchmarks (MLPerf Client, Procyon
+AI). This evolution — from accuracy-only, to non-comparable vendor performance numbers, to standardized
+accuracy-constrained benchmarks, to LLM-quality suites — reflects the field's maturation and its
+recurring struggle with the same problem: how to measure AI performance and quality *credibly and
+comparably*. The history shows progress (MLPerf's standardization was a real advance) but also the
+persistent gap (the fastest-moving workloads always outrun the benchmarks, and quantization-specific
+quality measurement remains under-standardized). Understanding this history contextualizes the current
+gaps as the latest instance of a recurring challenge rather than a novel failure — the benchmarks have
+always lagged the methods, and the field has always relied partly on vendor claims in the interim,
+which is why the confidence discipline this database applies is a permanent necessity, not a temporary
+workaround.
+
+## The reproducibility and comparability problem
+
+A specific weakness of quantization *quality* evaluation, expanding Section 05's caveat, is the
+**reproducibility and comparability** problem, which deserves emphasis because it undermines much of the
+published quantization-accuracy discourse. The issue: a quantization method's reported accuracy depends
+on many under-documented choices — the group size, the calibration set, the protected layers, the
+specific model and version, the evaluation tasks and their configurations, the random seed — and
+different papers and checkpoints vary these, so two "4-bit GPTQ" results from different sources are not
+directly comparable, and a method's headline accuracy may not reproduce under different conditions
+(Section 05's "quantized model of unknown quality" problem). This is not fraud but the natural
+consequence of a fast-moving field without standardized evaluation protocols. The consequences are
+real: cross-method comparisons from different papers are only roughly commensurable, published accuracy
+numbers should be treated as indicative rather than definitive, and a practitioner cannot assume a
+method's reported accuracy will hold for their model and task without re-measuring. The community has
+developed partial remedies — shared evaluation via lm-eval-harness, conventions around reporting FP16
+deltas, some publishers documenting their quantization configurations — but the problem persists, and it
+is a significant weakness in the field's evaluation infrastructure. A standardized quantization-quality
+benchmark (measuring the accuracy-vs-compression tradeoff across methods and models under controlled,
+documented conditions) would address it, and its absence is a real gap. Until then, the discipline is to
+treat published quantization-accuracy numbers with appropriate skepticism, document one's own
+quantization configuration, and re-measure on the actual deployment target and task — the same discipline
+the whole database applies, extended to the evaluation infrastructure itself.
+
+## Benchmark gaming and Goodhart's law
+
+A cautionary consideration for any benchmark discussion is **Goodhart's law** — "when a measure becomes a
+target, it ceases to be a good measure" — which applies to quantization benchmarking. If a specific
+benchmark becomes the target, vendors and methods can optimize for it in ways that do not generalize:
+tuning quantization specifically for the benchmark's models and tasks, choosing configurations that
+favor the benchmark, or (in the accuracy-quality context) optimizing for the specific task suites at the
+expense of un-benchmarked capabilities. MLPerf's accuracy-constrained, peer-reviewed design mitigates
+some gaming (you cannot trade accuracy for throughput unmeasured, and submissions are inspected), but no
+benchmark is immune — a chip optimized to win MLPerf on the benchmark's specific models may not be
+proportionally better on a customer's actual workload, and a quantization method tuned to preserve the
+benchmark's tasks may degrade on others. This is why the database emphasizes evaluating on *your actual
+task and workload*, not just standard benchmarks — the benchmark is a useful signal but not a guarantee
+for your specific case. The Goodhart concern is a reason to use benchmarks as one input among several
+(alongside on-device measurement of the actual workload) rather than as the sole arbiter, and it is a
+reason to be wary of both vendor benchmark-optimization and method-specific benchmark-tuning. Good
+benchmarking practice — diverse tasks, held-out evaluation, on-target measurement, skepticism of
+benchmark-specific optimization — mitigates Goodhart, but the fundamental tension (measures become
+targets) is permanent, and it reinforces the database's stance that no single number (benchmark or TOPS)
+substitutes for evaluating the actual deployment on the actual target.
+
+## ONNX quantization representation in depth
+
+The ONNX quantization standard warrants fuller treatment as the primary model-exchange standardization
+effort. ONNX provides two representations for quantized models (Section 06): the **QDQ format**, which
+keeps floating-point operators but inserts explicit QuantizeLinear/DequantizeLinear node pairs carrying
+scale and zero-point (the compiler folds these into integer operators), and the **QOperator format**,
+which uses explicitly quantized operator types (QLinearConv, QLinearMatMul). The QDQ format has become
+the more common and flexible approach — it cleanly separates "what precision" from "which operator" and
+lets each backend decide how to execute the quantized graph. ONNX Runtime, with its execution-provider
+architecture, operationalizes this across hardware (CPU, CUDA, TensorRT, QNN, OpenVINO, and other EPs),
+making ONNX the nearest thing to a portable quantized-model exchange format. The standardization is
+valuable but imperfect: vendor compilers vary in which ONNX quantization constructs they accept, how
+faithfully they preserve the intended scheme (per-group, mixed precision), and how they handle the newer
+formats, so an ONNX-quantized model does not always deploy identically across targets (Section 06's
+exchange-format friction). The ONNX quantization spec continues to evolve (adding support for newer
+schemes, better per-channel/per-group representation, and the emerging formats), and its maturation is
+part of the tooling consolidation (Section 14). For interoperability, ONNX is the best available
+standard, but it eases rather than eliminates the fragmentation, and the gap between the standard and its
+consistent implementation across vendors remains a real friction. The contrast with the OCP format
+standards is instructive: agreeing on a numeric format (a well-defined bit layout) is easier and more
+complete than agreeing on a full model representation and its compilation semantics, which is why the OCP
+format standards are further along than the ONNX quantization standard, and why numeric-format
+consolidation (Section 14) is likely to precede full model-exchange standardization.
+
+## The community and de-facto standards
+
+Beyond the formal standards bodies (MLCommons, OCP, the ONNX community), quantization has significant
+**de-facto standards** set by the community and the dominant tools, which deserve recognition. **GGUF**
+(llama.cpp) is a de-facto standard distribution format for local quantized LLMs — not blessed by a
+standards body but universally adopted by the local-LLM ecosystem (Sections 02, 05). **The reference
+method implementations** (AutoGPTQ, AutoAWQ, bitsandbytes, the Hugging Face quantization backends) are
+de-facto standard tools that define how quantization is done in practice. **lm-evaluation-harness** is
+the de-facto standard for LLM-quality evaluation. **Hugging Face's model hub** conventions (how quantized
+models are packaged and documented) are de-facto standards for distribution. These community/de-facto
+standards are, in practice, as important as the formal ones — they are what practitioners actually use —
+and they emerged from the open-source dynamic (Section 02) rather than from standards committees. The
+interplay between formal standards (MLPerf, OCP, ONNX) and de-facto standards (GGUF, the reference tools,
+lm-eval-harness) characterizes the quantization standardization landscape: the formal standards address
+interoperability and credible comparison, while the de-facto standards address the practical how-to of
+quantization, and both are essential. The de-facto standards' emergence from open source is a strength
+(they reflect what actually works and is adopted) but also a source of the reproducibility problem (they
+are conventions, not rigorously-specified standards, so they vary). The field's maturation involves both
+strengthening the formal standards (better benchmarks, format consolidation) and formalizing the de-facto
+ones (documented conventions, reproducible protocols) — a two-track standardization that Section 14's
+consolidation trend encompasses.
+
 ## Synthesis
 
 Standards and benchmarks are where quantization is *less* mature than its technical methods, and this
