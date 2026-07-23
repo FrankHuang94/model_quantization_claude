@@ -509,6 +509,95 @@ breaks the fast path. This end-to-end dependency is the practical face of co-des
 not enough for the algorithm and the silicon to be compatible; every layer between them
 must be too.
 
+## Memory bandwidth and on-chip resources across edge silicon
+
+Because the roofline analysis shows memory bandwidth — not peak TOPS — is the binding
+constraint for the memory-bound LLM-decode case, a bandwidth-oriented comparison is more
+useful than a TOPS table for reasoning about on-device generative AI. The table below
+gives representative figures (illustrative and approximate; exact values vary by
+configuration and are vendor-reported where noted ⚠️). The point is the *ratios and the
+relationship to model size*, not precise numbers.
+
+| Platform (representative) | Memory type | Approx bandwidth | Typical RAM | Implication for quantized LLM decode |
+|---|---|---|---|---|
+| Flagship phone SoC (Snapdragon 8 Elite Gen 5) | LPDDR5X | ~70–80 GB/s ⚠️ | 12–16 GB | 4-bit 7B fits + decodes at interactive rate |
+| Apple M-series (M5) | Unified LPDDR5X | ~150 GB/s ⚠️ | 16–32 GB | Larger 4-bit models + MoE feasible on-device |
+| Mid-range phone SoC | LPDDR5 | ~40–50 GB/s ⚠️ | 6–8 GB | 4-bit 3–4B class; 7B tight |
+| NVIDIA Jetson Orin | LPDDR5 | ~200 GB/s ⚠️ | 8–64 GB | High-throughput edge LLM/vision |
+| Laptop NPU (Core Ultra / Ryzen AI) | System LPDDR5 | ~100–120 GB/s ⚠️ | 16–32 GB | 4-bit 7–13B on-device |
+| Microcontroller + Ethos-U | On-chip SRAM / low-BW flash | <10 GB/s | KB–MB | tinyML only; INT8 small models |
+
+The table makes the on-device-LLM reality concrete: whether a quantized model runs well is
+governed by (1) does it *fit* in RAM at the chosen bit-width, and (2) is the memory
+*bandwidth* enough for an acceptable token rate. Both are quantization-dependent — 4-bit
+weights both fit in less RAM and stream faster than FP16 — which is why quantization is the
+enabling technology for on-device generative AI, and why bandwidth and RAM, not TOPS, are
+the numbers to check. A chip with high TOPS but low bandwidth will disappoint on LLM
+decode; a chip with modest TOPS but good bandwidth and enough RAM will do well.
+
+## Compiler and runtime stacks compared
+
+The tooling that turns a quantized model into a running engine varies in portability,
+performance, and quantization support. A second comparison table orients the vendor
+sections:
+
+| Stack | Owner | Portability | Quantization support | Best for |
+|---|---|---|---|---|
+| TensorRT / TensorRT-LLM | NVIDIA | NVIDIA only | INT8/INT4/FP8/FP4, strong | NVIDIA GPU/Jetson, max performance |
+| Core ML (+ Core ML Tools) | Apple | Apple only | INT8/INT4 palettization, per-block | Apple devices |
+| QNN / AI Engine Direct (+AIMET) | Qualcomm | Qualcomm only | INT4/INT8/INT16/FP8 | Snapdragon NPU, max performance |
+| LiteRT (TFLite) | Google | Cross-vendor (delegates) | INT8-centric, growing INT4 | Mobile, broad reach |
+| OpenVINO (+ NNCF) | Intel | Intel-centric, some cross | INT8/INT4/FP8 | Intel CPU/GPU/NPU |
+| ONNX Runtime | Microsoft/community | Cross-vendor (EPs) | QDQ/QOperator INT8/INT4 | Portable exchange + serving |
+| Apache TVM | Community | Cross-vendor (BYOC) | Flexible, autotuned | Research, custom targets |
+| ExecuTorch | Meta/PyTorch | Cross-vendor | PyTorch-native quant flows | PyTorch edge deployment |
+| MLX | Apple | Apple silicon | Native low-bit, LLM-focused | On-device LLM on Apple |
+| llama.cpp / GGUF | Community | Very broad (CPU/Metal/etc.) | GGUF k-quants 2–8 bit | Local LLM, broad hardware |
+
+The portability–performance tension is visible: the vendor-locked stacks (TensorRT, Core
+ML, QNN) extract maximum performance on their silicon because they own the kernels and
+know the hardware, while the cross-vendor stacks (ONNX Runtime, TVM, LiteRT, ExecuTorch)
+trade some peak performance for the ability to target many devices. The choice depends on
+whether a deployment targets one silicon family (use the vendor stack) or must span many
+(use a portable stack and accept per-target tuning). The MLIR convergence is an attempt to
+get portability *without* the performance penalty, by sharing compiler infrastructure
+across the vendor and open stacks.
+
+## Profiling and optimizing quantized models on device
+
+Co-design is ultimately an empirical discipline: the only way to know how a quantized
+model runs is to profile it on the target. The essential measurements are the **layer-wise
+latency breakdown** (which operators dominate, and whether any are falling back off-NPU),
+the **processor occupancy** (is the NPU actually doing the work, or is the CPU/GPU picking
+up fallbacks?), the **memory bandwidth utilization** (is decode bandwidth-bound as
+expected?), and the **on-device accuracy** (does the compiled model match the quantization
+tool's simulated accuracy?). Vendor profilers (Qualcomm's, Apple's Instruments/Core ML
+performance reports, NVIDIA's Nsight) expose these. The optimization loop is: profile,
+find the operators that fall back or dominate, adjust the model (swap an unsupported op,
+change the quantization scheme to a supported precision/granularity, re-tile), and
+re-profile. This loop is where the abstract co-design principles become concrete
+engineering, and it is why a realistic deployment timeline includes on-device profiling and
+iteration, not just a one-shot quantize-and-ship. The most common surprises it surfaces are
+unexpected fallbacks (a single unsupported op tanking performance) and accuracy drift
+between the simulated and compiled models — both invisible until measured on the device.
+
+## The DSP heritage of mobile NPUs
+
+A historical note that illuminates the present: many mobile NPUs descend from **digital
+signal processors**, and the lineage shapes their quantization behavior. Qualcomm's Hexagon
+began as a DSP for modem and audio processing before gaining vector (HVX) and tensor
+extensions for AI; DSPs have used fixed-point (integer) arithmetic for decades because it
+is energy-efficient, so the DSP heritage predisposed these engines toward integer
+quantized execution from the start. This is part of why mobile NPUs were INT8-native early
+and why they handle the fixed-point requantization arithmetic efficiently — it is what
+DSPs always did. The heritage also explains some flexibility differences: DSP-derived
+vector engines handle the irregular operations of a real model (varied convolutions,
+attention, elementwise ops) more gracefully than a pure systolic array optimized only for
+large regular matmuls, at some peak-efficiency cost. Understanding that a mobile NPU is
+often "a DSP that grew tensor units" clarifies both its strengths (efficient integer
+math, flexible operator support) and the design choices in its quantization support, and
+it is a thread that recurs in the Qualcomm and MediaTek roadmaps of Sections 09–10.
+
 ## Summary
 
 Hardware–software co-design is where quantization theory meets physical reality. The
