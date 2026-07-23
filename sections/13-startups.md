@@ -537,6 +537,23 @@ startup ecosystem is a healthy sign of the field's commercial importance, a sour
 innovation (in-memory compute) that the incumbents are watching, and a talent pipeline connected to the
 research groups of Section 12.
 
+Several forward-looking observations complete the picture. The landscape is entering a **maturation and
+consolidation phase**: the open-source commoditization of quantization technique and the acquisitions of
+differentiated players (Neural Magic, Deci) signal that the standalone compression-software business is
+hard to sustain, while the capital-intensive hardware startups are the ones betting on independent scale,
+with outcomes that will include a few independent successes, many acquisitions, and some failures. The
+**in-memory-compute bet** is the most technically ambitious and most-watched — if it matures it would
+reshape the inference-hardware market and deepen the quantization-hardware co-design; if the technology
+risk proves too high (as Mythic's struggles warn), it joins the long history of novel-compute efforts
+that promised more than they delivered. The **strategic dimension** (sovereign AI, reducing NVIDIA
+dependence) is increasingly shaping funding beyond pure commercial logic. And the **next wave** of
+startups will likely be catalyzed by whatever AI capability next most strains hardware — multimodal and
+diffusion on-device, agentic AI's sustained inference, or the maturation of novel compute — with
+quantization the perennial response. For anyone tracking the commercial edge of quantization, the startup
+landscape is where the hardware innovation and go-to-market experimentation happen, and its
+consolidation, its in-memory-compute bets, and its strategic entanglements are the developments to watch
+as the field's commercial structure matures.
+
 ## Master database contributions
 
 This section contributes startup entities to the master database (Section 16): Multiverse Computing,
