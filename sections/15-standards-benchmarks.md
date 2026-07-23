@@ -347,6 +347,55 @@ strengthening the formal standards (better benchmarks, format consolidation) and
 ones (documented conventions, reproducible protocols) — a two-track standardization that Section 14's
 consolidation trend encompasses.
 
+## What a standardized quantization-quality benchmark would measure
+
+Since the absence of a standardized quantization-quality benchmark is the field's key evaluation gap, it
+is worth sketching what one would ideally measure — both to clarify the gap and to indicate the
+direction of improvement. A comprehensive quantization-quality benchmark would evaluate, in a
+standardized and reproducible way: **the accuracy-vs-compression tradeoff** across bit-widths (16, 8, 4,
+3, 2 bits) and methods (GPTQ, AWQ, QuIP#, etc.), on a **fixed set of models** (spanning sizes, since the
+model-size interaction of Section 07 matters) and **fixed, documented configurations** (group size,
+calibration set, protected layers), measured on **deployment-relevant task suites** (not just perplexity
+— reasoning, code, instruction-following, long-context) reported as **deltas from the float baseline**.
+It would also measure the *slice-level* degradation (Section 07's concentrated failures — rare classes,
+hard tasks, long context) not just aggregate accuracy, and ideally the *robustness/safety* deltas that
+Section 07 flagged. On the performance side, it would pair this with accuracy-constrained throughput and
+energy measurement (MLPerf-style) on *actual target hardware*. Such a benchmark would let practitioners
+and researchers compare quantization methods and their tradeoffs credibly, addressing the reproducibility
+and comparability problem. The reasons it does not yet exist are the effort required (running many
+methods × bit-widths × models × tasks is expensive), the fast-moving methods (a benchmark risks
+obsolescence), and the coordination challenge (agreeing on the protocol across a fragmented field). But
+its absence is a real gap, and efforts toward it — whether from MLCommons (extending MLPerf toward
+quantization-quality), the research community (standardized evaluation protocols), or a dedicated effort
+— would materially improve the field's evaluation infrastructure. The database's own approach (the
+maturity and confidence tags) is a partial, qualitative substitute for what a rigorous quantitative
+benchmark would provide, and the need for the latter is one of the clearer conclusions of this section.
+
+## Standardization politics and incentives
+
+Standardization does not happen in a vacuum; it is shaped by the incentives and politics of the players,
+which explains both the successes and the gaps. The **format standards** (OCP FP8, MX) succeeded because
+the vendors share a strong interest in interoperable numeric formats — a fragmented format landscape
+hurts everyone (models don't port, tooling multiplies), so agreeing on formats is positive-sum, which is
+why nearly all major vendors joined the OCP effort. The **benchmark standards** (MLPerf) succeed where
+vendors see value in credible comparison (to demonstrate their silicon's strengths) but face the tension
+that a vendor doing poorly on a benchmark has an incentive not to participate (Apple's non-participation
+being the notable case), leaving coverage gaps. The **model-exchange standards** (ONNX quantization) face
+the tension that vendors have some incentive toward lock-in (their own optimized stacks are competitive
+advantages), so full interoperability is not unambiguously in every vendor's interest, which slows the
+standard's complete adoption. And the **de-facto standards** (GGUF, the reference tools) emerged from the
+open-source community precisely because the formal standardization was slow or absent, filling the gap
+bottom-up. Understanding these incentives clarifies the landscape: format standards advance fastest
+(positive-sum), benchmark participation is uneven (competitive incentives), model-exchange standards lag
+(partial lock-in incentives), and community de-facto standards fill gaps (open-source dynamism). The
+politics also connect to the geopolitical dimension (Section 11) — the Western (OCP, ONNX, MLCommons) and
+Chinese domestic standardization efforts may diverge, adding another axis of fragmentation. For the
+field's maturation, the incentive analysis suggests that format consolidation (positive-sum) will
+continue to progress, while benchmark coverage and model-exchange standardization will advance more
+slowly against the competitive frictions — a realistic expectation that tempers the optimism about
+standardization easing the fragmentation tax. The standardization will advance, but unevenly, shaped by
+where the players' incentives align and where they conflict.
+
 ## Synthesis
 
 Standards and benchmarks are where quantization is *less* mature than its technical methods, and this
