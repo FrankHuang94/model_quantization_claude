@@ -568,7 +568,14 @@ as the field's commercial structure matures.
 
 This section contributes startup entities to the master database (Section 16): Multiverse Computing,
 d-Matrix, EnCharge AI, Hailo, SiMa.ai, Kneron, Axelera AI, Neural Magic, Deci AI, Nota AI, Rain AI,
-Latent AI, Deeplite, Femtosense, and Pruna AI — see Section 16.
+Latent AI, Deeplite, Femtosense, and Pruna AI — see Section 16. These startup entries, tagged by
+category (compression-sw, inference-chip, edge-chip) and with press-level source confidence reflecting
+the fast-changing nature of startup information, round out the entity taxonomy of the master database
+alongside the chipmakers, frameworks, methods, and research labs of the preceding sections. Together
+they show that the quantization ecosystem is not only a matter of incumbent silicon and academic
+research but also of an active, well-funded, and consolidating startup landscape betting on the
+commercial value of making AI cheaper and more efficient to deploy — the same value proposition, at the
+company scale, that quantization delivers at the technical scale throughout this database.
 
 ---
 
