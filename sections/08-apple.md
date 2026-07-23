@@ -209,6 +209,163 @@ strategic direction is clear even if the technical specifics are not: Apple is c
 on-device AI, quantization is central to it, and the whole-stack co-design is Apple's
 durable advantage.
 
+## The ANE architecture and its quantization implications
+
+Although Apple does not publish the ANE's microarchitecture, enough is known from research
+(including independent reverse-engineering work and Apple's own developer guidance) to
+characterize its quantization-relevant properties. The ANE is a matrix-multiply accelerator
+optimized for the convolution and (increasingly) transformer operations of Apple's
+workloads, designed above all for **energy efficiency** — it exists to run neural workloads
+at a fraction of the power the GPU would use, which is why Apple routes on-device features to
+it. Its design favors specific data layouts and operation shapes, and models must be
+structured to match (Apple's research on "Deploying Transformers on the Apple Neural Engine"
+details how to restructure attention to run efficiently on the ANE, using a specific
+principle of splitting operations to match the ANE's preferred tensor shapes). The
+quantization implication is that the ANE's efficiency is maximized when the model uses the
+compression schemes the ANE decodes cheaply — which Apple's guidance indicates is
+**palettization** (lookup-table decode) rather than, or alongside, uniform integer. This is
+an unusually strong signal that Apple's silicon is co-designed with a *non-uniform*
+(codebook) quantization approach, distinguishing it from the integer-centric NPUs of the
+Android ecosystem, and it reflects the Deep-Compression/codebook lineage of Section 04
+embedded in hardware.
+
+The ANE also imposes constraints developers must respect: it handles some operations
+natively and falls back to GPU/CPU for others (Section 06's heterogeneous-execution
+reality), it prefers static shapes, and its performance is sensitive to the model structure.
+Apple's **Core ML performance tools** (and the internal "Talaria" tooling Apple has described
+for analyzing on-device model latency and power) help developers understand where a model
+runs and why, but the fundamental opacity remains — developers optimize by measurement and
+by following Apple's guidance rather than by reasoning from a published spec. For
+quantization specifically, this means the practical workflow is to try the recommended
+schemes (palettization for ANE, INT4 linear for GPU), measure on-device, and iterate — the
+co-design loop, conducted through a somewhat opaque interface.
+
+## The ANE generation history in detail
+
+Each ANE generation added capability aligned with Apple's evolving on-device ambitions. The
+**A11 (2017)** ANE was narrow — two cores, dedicated to Face ID and photography — and did not
+expose to third-party developers initially. The **A12 (2018)** opened the ANE to Core ML
+developers and jumped to eight cores, making on-device inference broadly available. The
+**A14/M1 (2020)** reached sixteen cores and, crucially, brought the ANE to the Mac,
+unifying the compute story across Apple's product lines. The **A17 Pro (2023)** roughly
+doubled throughput to ~35 TOPS, arriving just as on-device generative AI became a strategic
+priority, and its successors (A18/M4, 2024) were the launch silicon for Apple Intelligence —
+the generation where the ANE's throughput and the Core ML quantization tooling (INT4
+block-wise, per-grouped-channel palettization, stateful KV cache, all landing in
+iOS 18/macOS Sequoia) came together to make a ~3B on-device LLM viable. The **M5 (2025)**
+marked a strategic addition on the *GPU* side — Neural Accelerators within each GPU core —
+reflecting that high-performance on-device LLM work (via MLX) runs on the GPU, so Apple
+brought matrix acceleration there rather than only scaling the ANE. Reading the generation
+history, the ANE evolved from a fixed-function photography accelerator into a general
+on-device neural engine, and the 2023–2025 period is when Apple's silicon, tooling, and
+models converged on on-device generative AI — with quantization (INT4, palettization, KV
+cache) as the enabling layer at every step.
+
+## Core ML Tools: the optimization workflow in depth
+
+Core ML Tools' compression capabilities deserve a fuller treatment because they are the
+practical interface most developers use. The library organizes compression into a workflow:
+a model is converted to Core ML format, then optimized via one or more of quantization,
+palettization, and pruning, with a choice of *how much data and training* to invest:
+
+- **Post-training (data-free) compression** — apply palettization or quantization directly to
+  the trained weights, no data required. Fastest, lowest accuracy at aggressive settings.
+- **Calibration-based (data-informed) compression** — use a small calibration dataset to set
+  activation ranges and inform the compression (e.g. choosing palettization centroids or
+  quantization scales that minimize error on real data). Better accuracy.
+- **Training-time compression (fine-tuning)** — insert the compression into a fine-tuning
+  loop (QAT-style, Section 03), letting the weights adapt to the quantization/palettization.
+  Best accuracy at aggressive bit-widths, highest cost.
+
+This mirrors the PTQ-to-QAT escalation ladder of Section 03, exposed through a unified API.
+Core ML Tools also supports **joint compression** — combining, for example, per-grouped-
+channel palettization with sparsity, or quantization with pruning — to stack compression
+gains, and it handles **activation quantization** (not just weights) for models where the
+compute (not just memory) benefits. For LLMs specifically, the **stateful model** support
+(2024) is important: it lets the KV cache persist across Core ML predictions as model state,
+avoiding the recomputation and copying that would otherwise make on-device autoregressive
+decoding slow. The combination — INT4 or palettized weights, activation quantization where
+useful, and a stateful quantized KV cache — is Apple's on-device LLM recipe, and it is
+expressible entirely within Core ML Tools, which is why the library is the practical center
+of Apple's quantization story.
+
+## MLX in depth
+
+MLX deserves fuller treatment as the increasingly-dominant on-device LLM path. Designed for
+Apple silicon's unified memory, MLX avoids the host-device data transfers that frameworks
+ported from the discrete-GPU world incur, which matters enormously for LLM inference where
+data movement dominates. MLX exposes quantization directly: `mlx.core` supports **group-wise
+weight quantization** to 4-bit (and other bit-widths), and the `mlx-lm` package provides
+ready quantization and inference of popular LLM architectures, plus **LoRA/QLoRA fine-tuning**
+on-device. The framework's design philosophy — lazy computation, composable function
+transformations, unified memory — makes it ergonomic for research and for building on-device
+LLM applications, and Apple's own machine-learning research group publishes MLX-based work
+(including the M5 LLM exploration demonstrating 4-bit Qwen and MoE models on-device). The
+strategic reading is that MLX is Apple's answer to llama.cpp and PyTorch for Apple silicon:
+a native, unified-memory-optimized framework where quantization is a first-class capability,
+targeting the GPU (and M5's GPU Neural Accelerators) for performance. For developers building
+on-device LLM features that exceed what Core ML's embedded-model path handles well, MLX is
+the high-performance, flexible option, and its growth is a significant part of Apple's
+on-device quantization trajectory.
+
+## Apple Intelligence architecture in depth
+
+Apple Intelligence is worth dissecting further as the reference example of production
+on-device quantization. Apple has disclosed that the system uses an on-device foundation
+model of roughly 3 billion parameters and a larger server-based model, with an orchestration
+layer routing requests to the appropriate tier. The on-device model is quantized aggressively
+— Apple has described using a mixed-precision scheme averaging in the neighborhood of
+3.5–4 bits per weight ⚠️ (combining low-bit palettization with higher precision for sensitive
+layers, consistent with the mixed-precision best practices of Sections 03 and 05) — to fit and
+run within a phone's memory and power envelope. The distinctive architectural choice is the
+**adapter** approach: rather than shipping many specialized models, Apple ships one quantized
+base model and a library of small **LoRA adapters**, each specializing the base for a specific
+feature (writing tools, summarization, etc.), loaded on demand. This is the quantized-base-
+plus-adapters pattern of Section 05 at production scale, and it is memory-efficient (one
+resident base, tiny swappable adapters) and update-friendly (adapters can be updated
+independently of the base). The **Private Cloud Compute** tier handles requests beyond the
+on-device model's capability, with a privacy architecture designed so that even Apple cannot
+access the data — a design that makes the on-device tier's capability (and thus its
+quantization) strategically important, because maximizing what runs on-device minimizes cloud
+dependence. In 2025 Apple also opened access to the on-device foundation model to third-party
+developers via a framework, extending the quantized on-device model as a platform capability.
+Apple Intelligence is, in short, a large-scale validation of the on-device-quantization thesis:
+a heavily-quantized small foundation model, specialized by adapters, is capable enough to power
+a mass-market AI feature set, and quantization is what makes it fit.
+
+## Apple's research contributions
+
+Apple's machine-learning research group has made public contributions relevant to quantization
+and efficient on-device inference, which both advance the field and signal Apple's priorities.
+Beyond the ANE-optimized-transformer work mentioned above, Apple has published on efficient
+on-device LLM inference (including the Llama-on-Core-ML work demonstrating INT4 + stateful KV
+cache), on the MLX framework and its use for on-device LLMs, and on model-compression and
+efficient-architecture techniques. Apple's research tends to be applied — oriented toward what
+runs well on Apple silicon — rather than pursuing the aggressive-bit-width frontier that
+academic groups chase, consistent with its whole-stack, ship-it product focus. This applied
+orientation means Apple is a consumer and integrator of the field's quantization advances
+(adopting INT4, KV-cache quantization, adapters) more than a source of novel low-bit
+algorithms, and its contribution is in demonstrating how to make these techniques work
+reliably at mass-market scale on real silicon — arguably a harder and more impactful problem
+than the last accuracy point at 2-bit.
+
+## The unified-memory advantage
+
+A structural advantage worth isolating is Apple's **unified memory architecture (UMA)**, in
+which the CPU, GPU, and ANE share a single pool of high-bandwidth memory. For quantized LLM
+inference this is significant because it eliminates the copies that a discrete-GPU system pays
+when moving data between host and device memory — the model, the KV cache, and the activations
+live in one place accessible to all compute units. Combined with quantization (which shrinks
+the model to fit comfortably in the shared pool) and the M-series' substantial memory
+bandwidth (~150 GB/s on M5 ⚠️, higher on Pro/Max variants), UMA makes Apple silicon a strong
+on-device LLM platform: a 4-bit quantized model fits in unified memory, streams at the
+bandwidth the memory-bound decode needs, and is accessible to GPU (via MLX), ANE (via Core ML),
+and CPU without copies. This is part of why Apple silicon has become a favored platform for
+local LLM experimentation (via MLX, llama.cpp's Metal backend, Ollama, and others), and it is
+an advantage the discrete-accelerator competitors structurally lack. The interaction of UMA and
+quantization is a clean example of hardware and compression co-designing to enable a use case
+neither achieves alone.
+
 ## Master database contributions
 
 This section contributes the following entities to the master database (Section 16): Apple

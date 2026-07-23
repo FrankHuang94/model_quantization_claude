@@ -15,3 +15,7 @@ OmniQuant,method,llm-quant,learned equivalent transforms,W4A4;W4,sdk-limited,Lea
 BitNet b1.58,method,llm-quant,quantization-native ternary training,1.58-bit,research-only,Trains ternary from scratch,BitNet paper (Microsoft),paper,04;05;16
 FP8 (E4M3/E5M2),format,numeric,low-bit floating point,W8A8 float,production-shipped,OCP standard 8-bit float,OCP FP8 spec,official-spec,04;16
 MXFP4,format,numeric,microscaling block FP4,W4A4 float,sdk-limited,Block FP with shared scale,OCP MX spec,official-spec,04;16
+Apple,chipmaker,mobile-soc,ANE + Core ML palettization/INT4,INT8;INT4;palettized 1-8bit;FP16,production-shipped,Whole-stack co-design; unified memory; Apple Intelligence,A19/M5 ANE + Apple Intelligence ~3B,official-spec;inferred,08;16
+Core ML / coremltools,framework,ptq-tool,palettization + linear + joint compression,INT8;INT4;1-8bit palettize,production-shipped,Codebook palettization tuned for ANE,coremltools,sdk-docs,08;16
+MLX,framework,inference-runtime,group-wise low-bit quant + on-device finetune,INT4;lower,production-shipped,Unified-memory native LLM framework,mlx-lm,sdk-docs,08;16
+Apple Intelligence,model-system,on-device-llm,mixed ~3.5-4 bit base + LoRA adapters,~3.5-4 bit avg,production-shipped,Quantized 3B base + swappable adapters + PCC,on-device foundation model,press;inferred,08;16
