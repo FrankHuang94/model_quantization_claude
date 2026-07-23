@@ -608,7 +608,16 @@ frontier; and the microscaling standard is the likely convergence point because 
 merges per-group quantization with a hardware-native format. The choice of format is
 increasingly made *by the target silicon*, which constrains the techniques of Section
 03 — and the LLM-specific methods of Section 05, which we turn to next, are largely
-about extracting maximum accuracy from these formats at 4 bits and below.
+about extracting maximum accuracy from these formats at 4 bits and below. The single
+most durable takeaway is the role-based framing: there is no universally best format,
+only a best format for a given tensor's distribution, sensitivity, and role, executed
+within the constraints of the target silicon. Weights, activations, gradients, the
+KV cache, and the sensitive embedding and normalization paths each favor a different
+representation, and a well-engineered quantized model is a deliberate *mixture* of
+formats rather than a single global choice. As the microscaling standard matures and
+FP8/FP4 silicon proliferates, the number of viable formats will first widen and then,
+under the economic pressure of verification and kernel-maintenance cost, narrow toward
+a consolidated set — a dynamic that recurs as a forward-looking theme in Section 14.
 
 ---
 
