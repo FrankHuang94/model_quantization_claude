@@ -203,6 +203,155 @@ must specifically target.
 | 2-bit | ~8× | High | High (codebook/QAT) | Only when memory forces it |
 | Binary/ternary | ~16× | Very high (unless native-trained) | Very high (QAT/native) | tinyML easy tasks; research |
 
+## Quantifying the memory win in practice
+
+The memory win is worth making concrete because its consequences are often binary rather
+than marginal. Weight memory is `parameters × bits / 8` bytes. A 7B-parameter model needs
+~14 GB at FP16, ~7 GB at INT8, ~3.5 GB at INT4, and ~1.75 GB at INT2 (before scale
+overhead). Against the RAM budgets of Section 06 — 6–8 GB on a mid-range phone, 12–16 GB on
+a flagship — the FP16 model simply does not load, the INT8 model is tight, and the INT4
+model fits comfortably with room for activations, the KV cache, and the rest of the system.
+Scale this to a 70B model (140 GB FP16, 35 GB INT4) and the same logic explains why 4-bit is
+what lets a large model run on a single high-end GPU or workstation rather than a multi-GPU
+server. The KV cache adds to this: at long context it can consume gigabytes, so quantizing
+it (INT8/INT4) is what keeps long-context inference within the memory budget. The practical
+framing is a fitting problem: compute the total memory (quantized weights + KV cache +
+activations + runtime overhead) at each candidate bit-width, compare to the device budget,
+and the lowest bit-width that fits with margin — subject to passing accuracy validation — is
+the answer. Because the win is linear in bit-width, halving the bits halves the dominant
+memory term, and this predictability is what makes the memory tradeoff easy to plan even
+though the accuracy tradeoff is not.
+
+## Quantifying latency and throughput
+
+The latency win divides by regime (Section 06's roofline). For **memory-bound LLM decode**,
+per-token latency is approximately the weight bytes divided by memory bandwidth, so it
+scales with bit-width: a 7B model at FP16 (14 GB) on 70 GB/s bandwidth needs ~200 ms/token
+just for weight movement, while at INT4 (3.5 GB) it needs ~50 ms/token — the ~4× speedup
+that makes on-device generation interactive. This is why the memory-bound latency column in
+the data tracks the memory column so closely: for decode, latency *is* memory movement. For
+**compute-bound** workloads (vision, prefill, large-batch serving), latency scales with the
+matrix engine's low-precision throughput — INT8 tensor units are typically ~2× FP16, and
+lower precisions faster where natively supported — so the win depends on native precision
+support rather than bit-count alone. The important caveat, repeated from Section 06: the
+compute win requires a native low-precision datapath and a good kernel; the memory win
+requires only fewer weight bytes and a kernel that reads them, which is why the memory win
+is more reliably realized across diverse hardware than the compute win. A realistic latency
+estimate therefore starts by classifying the workload's regime and then applies the
+appropriate scaling — bit-width for memory-bound, native-throughput-ratio for compute-bound
+— rather than assuming a single "quantization speedup" number.
+
+## Energy efficiency in depth
+
+Energy is where quantization's edge value is often decisive, and the mechanism (Section 06)
+is that data movement dominates energy, so fewer bits means proportionally less
+data-movement energy at every level of the memory hierarchy. The compounding is important:
+a 4-bit weight uses a quarter the DRAM-transfer energy of FP16, *and* a quarter the SRAM
+energy when cached, *and*, where native low-precision compute exists, less arithmetic
+energy per MAC. For an always-on workload the arithmetic is stark: a wake-word detector that
+must run continuously has a fixed power budget (often single-digit milliwatts), and whether
+the model fits that budget depends directly on its precision — INT8 or INT4 may be feasible
+where FP16 is not, making quantization the enabler of the always-on use case rather than an
+optimization of it. For a battery device running periodic inference (photo processing,
+transcription), the energy win translates to battery life and to how much inference the
+device can do before thermal throttling forces it to slow down — a real user-facing quality
+difference. The energy tradeoff has the same shape as the others: smooth, predictable
+savings with bit-width, counterweighted by the accuracy cliff, with the added feature that
+below some power budget the choice is not "faster vs. slower" but "runs at all vs. does not."
+
+## Robustness, adversarial, and safety implications
+
+Quantization interacts with model robustness and safety in ways that are under-appreciated
+and belong in an honest tradeoff accounting. The effects cut both ways. On one hand,
+quantization's added noise can *slightly* improve robustness to some input perturbations
+(the coarser representation is less sensitive to tiny input changes) — a minor, unreliable
+benefit. On the other hand, several genuine risks exist:
+
+- **Adversarial robustness can degrade.** Quantization can create new decision-boundary
+  artifacts that adversarial attacks exploit, and a model's certified or empirical
+  robustness does not automatically survive quantization — it must be re-evaluated. There is
+  also research on quantization-specific attacks that behave differently on the quantized vs.
+  full-precision model.
+- **Safety-behavior degradation.** For LLMs, the fine-tuned behaviors that implement safety
+  (refusing harmful requests, avoiding certain content) live in the same fragile weight
+  configurations as other fine-tuned capabilities, and aggressive quantization can weaken
+  them while leaving general capability intact — meaning a quantized model may be *less
+  safe* than its float parent in ways a capability benchmark misses. This is a real concern
+  for deployed assistant models and argues for safety-specific evaluation of quantized
+  checkpoints, not just capability evaluation.
+- **Backdoor and integrity considerations.** Because quantization is often applied by third
+  parties and distributed as opaque checkpoints (the provenance problem), the supply chain
+  for quantized models is a place where integrity matters — a maliciously-quantized
+  checkpoint could embed behaviors the float model lacks. This is a governance rather than a
+  purely technical concern, but it belongs in the risk column.
+
+The disciplined stance is that quantization changes the model's function in ways that can
+affect robustness and safety, so any property that mattered about the float model — certified
+robustness, safety behaviors, calibration — must be *re-validated* on the quantized model
+rather than assumed to carry over. This is an extension of the "evaluate on what matters"
+principle to the robustness and safety dimensions.
+
+## Fairness and the distribution of accuracy loss
+
+A tradeoff that deserves explicit attention: quantization's accuracy loss is not distributed
+uniformly across a model's inputs or across demographic or class groups, and this has
+fairness implications. Because quantization hits the least-represented, lowest-margin cases
+hardest (rare classes, tail inputs, under-represented groups in the training distribution),
+a quantized model can show *larger* accuracy degradation on minority groups or rare-but-
+important cases than its aggregate metric suggests — effectively amplifying existing
+disparities. In domains like medical imaging, biometric systems, and content moderation,
+this is a substantive concern: a model that is "99% as accurate overall" after quantization
+might be meaningfully worse on the specific populations or cases where errors are most
+costly. The remedy is, again, disaggregated evaluation — measuring the quantization delta
+per group and per slice, not just in aggregate — and treating a quantization that
+disproportionately harms a vulnerable slice as a failure to be fixed (mixed precision, better
+calibration including the affected slice, or a less aggressive scheme) rather than accepted.
+This is an ethical dimension of the tradeoff that a resource-versus-accuracy framing alone
+misses, and it is increasingly part of responsible deployment practice.
+
+## The maintenance and lifecycle cost
+
+Beyond the one-time quantization effort, there is an ongoing lifecycle cost that a full
+accounting includes. Every time the underlying model is updated (a new version, a
+fine-tune, a safety patch), the quantization must be redone and re-validated — the quantized
+artifact is derived from the float model and does not update itself. For a frequently-updated
+model this is a recurring pipeline cost. Maintaining *multiple* quantized variants (different
+bit-widths for different device tiers, different formats for different runtimes) multiplies
+this: each variant needs its own quantization, validation, and maintenance. The
+provenance/documentation burden (recording group sizes, calibration sets, protected layers,
+and per-task deltas for each variant) is part of this cost. None of this is prohibitive, and
+tooling increasingly automates it, but it is a real, ongoing cost that distinguishes a
+quantized deployment from simply shipping the float model, and it should be budgeted rather
+than discovered. The lifecycle cost is a reason some teams standardize on a single quantized
+variant (e.g. 4-bit weight-only) across their device fleet rather than optimizing each tier
+separately — accepting a slightly sub-optimal point on the tradeoff curve in exchange for a
+simpler, cheaper-to-maintain pipeline.
+
+## When not to quantize
+
+An honest tradeoff section must include the cases where quantization is the wrong choice:
+
+- **No binding resource constraint.** If the float model already fits and runs fast enough
+  within the power budget, quantization adds risk and effort for no benefit — ship FP16.
+- **Extreme accuracy sensitivity with no margin.** For a safety-critical model where even a
+  small, concentrated accuracy loss is unacceptable and cannot be validated away, the risk
+  may not be worth it, or only the most conservative scheme (INT8 QAT with exhaustive
+  validation) is acceptable.
+- **Rapidly-changing models where the maintenance cost dominates.** If the model updates
+  constantly and the quantization+validation pipeline cannot keep up, the lifecycle cost may
+  exceed the benefit.
+- **Hardware without native support for the beneficial scheme.** If the target cannot execute
+  the quantization scheme natively (falling back to higher precision), the win may not
+  materialize and the effort is wasted (Section 06).
+- **When a better lever exists.** Sometimes a smaller model, a distilled model, or an
+  architectural change delivers the resource win with less risk than quantizing a larger
+  model — quantization is one lever among several, and not always the best one.
+
+Recognizing these cases is part of the discipline: quantization is a high-leverage default
+for resource-constrained edge deployment, but it is a means to an end (fitting the resource
+budget), not an end in itself, and when the budget is already met or the risk is
+unjustified, the right amount of quantization is none.
+
 ## The honest bottom line
 
 Quantization's tradeoff is, for the common cases, extraordinarily favorable — INT8 and
